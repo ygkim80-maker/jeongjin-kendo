@@ -98,13 +98,13 @@ export class Match {
   }
   attack(zone){
     if(!attacks.includes(zone)||this.finished||this.ceremony||this.pointWait>0||this.forcedRetreat>0) return false;
-    const tsubaExit=this.tsubaFight&&zone==='hikiMen';
-    if(this.tsubaFight&&!tsubaExit)return false;
+    // During a declared tsuba-zeriai the referee flow separates both players
+    // first; no cut may jump straight out of the clinch.
+    if(this.tsubaFight)return false;
     const counter=zone==='do'&&this.counterWindow>0;
-    if(!['idle','seme'].includes(this.player.state)&&!tsubaExit&&!(counter&&this.player.state==='guard')) return false;
+    if(!['idle','seme'].includes(this.player.state)&&!(counter&&this.player.state==='guard')) return false;
     if(zone==='hikiDo'||zone==='gyakuDo')this.stance='chudan';
     if(!this.practice) this.prepareDefense(zone,counter);
-    if(tsubaExit){this.tsubaFight=false;this.player.clinch=this.ai.clinch=false;this.ai.state='idle';this.ai.elapsed=0;}
     Object.assign(this.player,{state:'attack',zone,elapsed:0,resolved:false,counter,startDistance:this.distance,startX:this.player.x,opponentX:this.ai.x});
     this.counterWindow=0;this.stats.attacks++; this.event('swing',{zone,counter}); return true;
   }
@@ -172,6 +172,10 @@ export class Match {
         if(next==='seme'){p.semeStyle=Math.floor(this.random()*3);p.irimi=this.random()<.5;p.semeSwitch=.48+this.random()*.42;if(p.irimi)this.event('irimi');}
         else p.irimi=false;
       }
+      // A held ArrowUp must replace an existing wrist/do guard immediately.
+      // Without this, the visual key changed but the previous guardStyle was
+      // still used by the scoring check.
+      if(next==='guard'&&input.menGuard)p.guardStyle=0;
       if(p.state==='seme'){p.semeSwitch-=dt;if(p.semeSwitch<=0){p.irimi=this.random()<.48;p.semeStyle=Math.floor(this.random()*3);p.semeSwitch=.48+this.random()*.42;}}
       p.guardTime=p.state==='guard'?p.guardTime+dt:0;
       p.guardHeld=(input.guard||input.menGuard)?.24:Math.max(0,p.guardHeld-dt);
@@ -185,6 +189,20 @@ export class Match {
       this.forcedRetreat-=dt;p.clinch=a.clinch=false;p.state='idle';a.state='idle';
       p.x=clamp(p.x-dt*2.0,-5.4,a.x-1.05);a.x=clamp(a.x+dt*2.0,p.x+1.05,5.4);
       if(this.forcedRetreat<=0)this.event('separate');return;
+    }
+    if(this.tsubaFight){
+      // Both fighters stay connected, alternately loading weight through the
+      // crossed guards.  A short exchange is followed by three clear steps
+      // back before either side can attack again.
+      const drive=Math.sin(this.clock*10)*.16;
+      p.state=a.state='clinch';p.clinch=a.clinch=true;
+      p.velocity=drive;a.velocity=-drive;
+      p.x=clamp(p.x+drive*dt,-5.4,a.x-1.05);a.x=clamp(a.x-drive*dt,p.x+1.05,5.4);
+      this.clinchTime+=dt;
+      // 0.45s at the existing two-step pace is roughly three short steps
+      // for each fighter, without throwing them back to opposite walls.
+      if(this.clinchTime>=1.25){this.tsubaFight=false;this.forcedRetreat=.45;this.clinchTime=0;this.event('tsuba_break');}
+      return;
     }
     if(p.state==='seme'&&this.distance<=3.15&&a.state!=='attack'){
       this.pressure=clamp(this.pressure+dt*(p.irimi?.96:.58),0,1);

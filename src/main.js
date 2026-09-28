@@ -93,7 +93,8 @@ function events(){for(const e of match.drain()){
   if(e.type==='ceremony'){cue('입장 · 세 발 · 인사',1.35);}
   if(e.type==='ready'){sound('start');voice(e.call);cue(e.call==='시작'?'중단 정렬 · 시작':'중단 정렬 · 두 판째',1.1);verdict(e.call,'이제부터 유효격자를 노릴 수 있습니다.');}
   if(e.type==='clinch_break'){cue('근접 대치 · 서로 물러납니다',1);verdict('죽도를 맞대고 대치했습니다.','이 간격에서는 후퇴하거나 퇴격 머리로 변화를 만드세요.');}
-  if(e.type==='tsuba'){cue('코등이 싸움 · ← + W/S 퇴격머리',1.25);verdict('코등이 싸움에 들어갔습니다.','죽도를 맞댄 채 중심을 다툽니다. 왼쪽 화살표와 W 또는 S로 물러나며 퇴격머리를 연결하세요.');}
+  if(e.type==='tsuba'){cue('코등이 싸움 · 중심을 다툽니다',1.25);verdict('코등이 싸움에 들어갔습니다.','양쪽이 코등이를 맞대고 밀고 비빈 뒤, 세 걸음씩 물러나 다시 공격합니다.');}
+  if(e.type==='tsuba_break'){cue('코등이 싸움 종료 · 세 걸음 후퇴',1.15);verdict('심판이 간격을 정리합니다.','양쪽이 세 걸음 물러난 뒤 다시 공격할 수 있습니다.');}
   if(e.type==='push')cue(e.result==='held'?'상대가 중심을 지켰습니다':e.result==='yield'?'몸받음 · 상대가 물러납니다':'몸받음',.75);
   if(e.type==='stoppage'){voice('중지');cue('중지 · 시작선으로 복귀',1.1);verdict('장외 가능성으로 경기를 중단합니다.','심판이 선수를 시작선으로 되돌립니다.');}
   if(e.type==='hansoku'){const offender=e.side==='player'?'남색':'흰색';cue(`${offender} 경고 △ ${e.point?'· 반칙 2회, 상대 1점':'· 누적 1회'}`,1.5);verdict(`${offender} 장외 경고`,e.point?'경고 2회로 상대에게 한 판이 주어졌습니다.':'두 번째 경고는 상대에게 한 판이 주어집니다.');}
@@ -149,7 +150,7 @@ function updateUI(){
   const slot=match.representative?'대표전':teamRoster()[Math.min(Number(match.bout)||1,match.teamSize)-1];$('team-status').classList.add('hidden');document.querySelector('.scoreboard').classList.toggle('team-mode',match.team&&started);teamStrip.classList.toggle('hidden',!match.team||!started);if(match.team){$('team-progress').textContent=match.representative?'대표전':`${match.bout}경기/${match.teamSize}경기`;$('team-clock').textContent=timeText;$('team-round').textContent=match.representative?'단판 승부':`단체전 · ${slot}`;$('team-left-wins').textContent=match.teamScore.player;$('team-right-wins').textContent=match.teamScore.ai;$('team-totals').textContent=`승수 ${match.teamScore.player}:${match.teamScore.ai} · 다득점 ${match.teamPoints.player}:${match.teamPoints.ai}`;$('team-left-player').textContent=$('player-label').textContent;$('team-right-player').textContent=$('opponent-label').textContent;$('team-left-points').innerHTML=scoreCells(match.player.points,2,'player');$('team-right-points').innerHTML=scoreCells(match.ai.points,2,'ai');}
   const d=match.distance,label=match.tsubaFight?'코등이 싸움':d<1.25?'코등이 간격':d<=2.65?'일족일도':'원거리';$('distance-label').textContent=label;
   $('hud-distance').textContent=match.team?`승수 ${match.teamScore.player}:${match.teamScore.ai} · 다득점 ${match.teamPoints.player}:${match.teamPoints.ai}`:label;$('control-distance').textContent=label;$('distance-marker').style.left=`${clamp((d-.3)/10.5*100,0,100)}%`;
-  $('distance-help').textContent=match.tsubaFight?'코등이 싸움 중입니다. ← + W/S로 퇴격머리를 연결하세요.':d<1.25?'너무 가깝습니다. E를 누르면 코등이 싸움으로 들어갑니다.':d<=2.65?'죽도가 닿는 거리입니다. 빈틈을 노리세요.':'한 걸음씩 들어가 타격 거리를 만드세요.';
+  $('distance-help').textContent=match.tsubaFight?'코등이 싸움 중입니다. 양쪽이 밀고 비빈 뒤 세 걸음씩 물러납니다.':d<1.25?'너무 가깝습니다. E를 누르면 코등이 싸움으로 들어갑니다.':d<=2.65?'죽도가 닿는 거리입니다. 빈틈을 노리세요.':'한 걸음씩 들어가 타격 거리를 만드세요.';
   $('pressure-fill').style.width=`${match.pressure*100}%`;$('hud-pressure').style.width=`${match.pressure*100}%`;$('pressure-label').textContent=match.opening>0?'빈틈':match.pressure>.45?'압박 중':'대치';$('hud-opening').textContent=$('pressure-label').textContent;
   if(match.clock>cueUntil)$('cue').classList.remove('show');if(match.clock>pointUntil)$('point-flash').classList.remove('show');
   const inp=input();document.querySelectorAll('[data-hold]').forEach(b=>b.classList.toggle('active',!!inp[b.dataset.hold]||(b.dataset.hold==='guard'&&!!inp.push)));
@@ -172,9 +173,9 @@ const keys={ArrowLeft:'back',ArrowRight:'forward',ArrowUp:'menGuard',Space:'seme
 const pressedCodes=new Set();
 window.addEventListener('keydown',e=>{
   if(['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)||$('help').open||$('settings-panel').open)return;
-  if(keys[e.code]||['KeyQ','KeyW','KeyS','KeyD','KeyA','KeyE','KeyR','Escape','KeyC'].includes(e.code))e.preventDefault();
+  if(keys[e.code]||['KeyQ','KeyW','KeyS','KeyD','KeyA','KeyE','KeyR','F1','Escape','KeyC'].includes(e.code))e.preventDefault();
   if(e.repeat)return;
-  if(e.code==='Escape'){if(match.finished)returnToIntro();else setPaused(!paused);return;}if(e.code==='KeyC'){if(dojo)dojo.view=(dojo.view+1)%4;return;}if(e.code==='KeyE'){if(started&&match.engageTsuba()){updateUI();return;}match.stance='chudan';updateUI();return;}if(e.code==='KeyR'){match.stance='jodan';updateUI();return;}
+  if(e.code==='F1'){returnToIntro();return;}if(e.code==='Escape'){if(match.finished)returnToIntro();else setPaused(!paused);return;}if(e.code==='KeyC'){if(dojo)dojo.view=(dojo.view+1)%4;return;}if(e.code==='KeyE'){if(started&&match.engageTsuba()){updateUI();return;}match.stance='chudan';updateUI();return;}if(e.code==='KeyR'){match.stance='jodan';updateUI();return;}
   if(!started||paused||match.finished)return;
   if(keys[e.code]){pressedCodes.add(e.code);held.add(keys[e.code]);pressStarted.set(e.code,match.clock);}
   const zone={KeyQ:'tsuki',KeyW:'men',KeyS:'smallMen',KeyD:'kote',KeyA:'do'}[e.code];if(zone)action(zone);

@@ -152,7 +152,7 @@ class Fighter {
     // Adult competitive build: the model is scaled from the sole, so height grows without floating above the floor.
     // A competitive adult build: raise height from the sole and broaden the
     // silhouette together, rather than making the helmet look oversized.
-    this.root.scale.set(1.08,1.16,1.08);
+    this.root.scale.set(1.08,1.74,1.08);
     // 천은 부드럽게, 호구와 죽도 금속은 윤기 있게 처리해 검은 외곽선 없이도
     // 실루엣과 소재가 분명하게 읽히도록 한다.
     const blue=side==='blue';this.fabric=toonMat(blue?'#172b49':'#f0eee3',.78);this.fold=toonMat(blue?'#15243c':'#d5d9d4',.84);this.armor=toonMat('#14212b',.28,.18);this.trim=toonMat('#53636a',.38,.22);this.skin=toonMat('#c5a284',.7);this.tape=toonMat(blue?'#c94140':'#ebe6cd',.58);this.metal=toonMat('#b5bcad',.26,.8);
@@ -203,6 +203,8 @@ class Fighter {
     for(const y of [.54,.96,1.125])mesh(new T.CylinderGeometry(.02,.02,.026,12),leather,this.shinai,0,y,0);
     for(let j=0;j<4;j++){const angle=j*Math.PI/2;const line=rod(this.shinai,.002,mat('#86704c'));between(line,V(Math.sin(angle)*.017,.24,Math.cos(angle)*.017),V(Math.sin(angle)*.017,1.1,Math.cos(angle)*.017));}
     this.pose={hand:V(0,1.19,.38),tip:V(0,1.64,1.42),lean:0,lunge:0,twist:0,sink:0,frontLift:0,backLift:0,frontOffset:0,backOffset:0};
+    // 1.5× shinai length, while its base remains locked to both hands.
+    this.shinai.scale.y=1.5;
     batchStatic(this.head,new Set([this.ribbon]));batchStatic(this.shinai);
     batchStatic(this.body,new Set(this.arms.flatMap(a=>[a.upper,a.lower,a.kote])));
   }

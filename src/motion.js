@@ -11,8 +11,9 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   const prepDuration=Math.max(.035,wind-.11),swingDuration=wind-prepDuration,followDuration=.075;
   const chamber=v(0,1.98,.08),hit=v(0,1.70,.68);
   let theta0=-.58,theta1=1.37,yaw0=0,yaw1=0;
-  // Men is a full-body entry: hands rise above the head, then the shinai extends down through the target.
-  if(zone==='men'){chamber.set(0,2.42,.05);hit.set(0,2.20,.84);theta0=-.72;theta1=1.76;}
+  // Big men follows the compact men line: a higher chamber and longer flying
+  // entry, without the circular "butterfly stroke" path above the head.
+  if(zone==='men'){chamber.set(0,2.13,.22);hit.set(0,1.78,.90);theta0=-.24;theta1=1.48;}
   if(zone==='kote'){chamber.set(.015,1.76,.21);hit.set(.035,1.27,.7);theta0=-.19;theta1=1.6;}
   // Small men keeps the same flying entry, but the shinai rises only briefly instead of a full overhead chamber.
   if(zone==='smallMen'){chamber.set(0,1.94,.26);hit.set(0,1.80,.84);theta0=-.16;theta1=1.39;}

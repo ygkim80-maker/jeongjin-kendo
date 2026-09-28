@@ -181,8 +181,10 @@ class Fighter {
     box(this.head,.16,.22,.08,this.armor,0,-.245,.16);
     this.ribbon=box(this.head,.022,.42,.012,this.tape,.09,-.19,-.22);
     this.legs=[];for(const x of [-.14,.14]){
-      const upper=rod(this.root,.079,this.fabric),lower=rod(this.root,.067,this.fold);
-      const foot=ellipsoid(this.root,.12,[.54,.32,1.45],this.skin,x,.041,.1);
+      // Legs must share the torso rig.  Keeping them on root made a bow rotate
+      // only the upper body, leaving a visible gap at the waist.
+      const upper=rod(this.body,.079,this.fabric),lower=rod(this.body,.067,this.fold);
+      const foot=ellipsoid(this.body,.12,[.54,.32,1.45],this.skin,x,.041,.1);
       this.legs.push({upper,lower,foot});
     }
     this.arms=[];for(const x of [-1,1]){
@@ -205,6 +207,12 @@ class Fighter {
   update(f,time,dt,player,level,pointWait,stance){
     this.root.position.x=f.x;this.root.rotation.y=player?Math.PI/2:-Math.PI/2;
     const wind=strikeWind(f.zone,player,level);
+    // Every committed cut exits on a lane beside the opponent instead of
+    // stopping in front of them or visually passing through their body.
+    const passProgress=f.state==='attack'?smooth((f.elapsed-(wind-.09))/(TIMING.recovery+.15)):0;
+    const passTarget=(player?-1:1)*.66*passProgress;
+    this.passOffset=mix(this.passOffset??0,passTarget,1-Math.exp(-dt*(f.state==='attack'?22:7)));
+    this.root.position.z=this.passOffset;
     // 상단세는 손을 이마 위에 두고 죽도 끝을 등 뒤로 충분히 눕힌다.
     const restHand=stance==='jodan'?V(0,1.98,.04):V(0,1.19,.38),restTip=stance==='jodan'?V(0,2.68,-.95):V(0,1.64,1.42);
     let hand=restHand.clone(),tip=restTip.clone(),lean=0,lunge=0,twist=0,sink=0,frontLift=0,backLift=0,frontOffset=0,backOffset=0;

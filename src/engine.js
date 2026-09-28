@@ -261,6 +261,7 @@ export class Match {
       }else if(f.state==='hit'&&f.elapsed>.48){f.state='idle';f.elapsed=0;}
     }
     p.x=clamp(p.x,-5.4,a.x-1.05);a.x=clamp(a.x,p.x+1.05,5.4);
+    this.considerRoughPlay(dt);
   }
   resolve(f,other,isPlayer){
     const zone=f.zone;
@@ -277,7 +278,6 @@ export class Match {
       if(!isPlayer)this.counterWindow=zone==='men'?this.opening:0;
       this.event('block',{perfect:other.guardTime<.32,zone,counterReady:zone==='men'});return;
     }
-    this.considerRoughPlay(dt);
     if(defending){
       // 완전히 맞지 않은 방어라도 죽도가 닿아 궤적을 흘릴 수 있다.
       // 즉, 머리 방어 중 허리를 맞아도 항상 즉시 유효타가 나진 않는다.

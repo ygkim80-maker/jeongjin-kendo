@@ -106,7 +106,7 @@ function events(){for(const e of match.drain()){
   if(e.type==='ai_guard')cue('상대가 죽도를 세웠습니다',.45);
   if(e.type==='ai_evade'){verdict('상대가 간격을 비켜냈습니다.','타격 전에 세메로 중심을 흔드세요.');cue('회피 · 다시 중심을 잡으세요',.8);}
   if(e.type==='parried'){sound('block');verdict(e.active?'상대가 타격을 받아냈습니다.':'상대가 죽도를 받아냈습니다.','세메로 방어를 흔들거나 상대가 공격할 때 빈틈을 노리세요.');cue('막혔습니다 · 중심을 먼저',.8);}
-  if(e.type==='contact'){sound('block');verdict('타격은 닿았지만 유효타가 아닙니다.','기합·잔심·중심이 갖춰진 기회를 만드세요.');cue('타격 · 유효격자 아님',.9);}
+  if(e.type==='contact'){sound('block');verdict('타격은 닿았지만 유효타가 아닙니다.',e.reason||'기합·잔심·중심이 갖춰진 기회를 만드세요.');cue('타격 · 유효격자 아님',.9);}
   if(e.type==='block'){sound('block');verdict(e.counterReady?'머리를 받아냈습니다. 허리로 연결하세요.':e.perfect?'정확한 순간에 받아냈습니다.':'방어 성공. 이제 반격하세요.',e.counterReady?'A를 누르면 받은 자세에서 바로 받아허리로 이어집니다.':`방어를 풀고 ${e.perfect?'여유 있게':'빠르게'} 타격하면 빈틈을 노릴 수 있습니다.`);cue(e.counterReady?'머리 방어 성공 · 받아허리 A':'방어 성공 · 반격의 기회',.9);}
   if(e.type==='swing'){sound('swing');voice(NAMES[e.zone]||'머리','fighter');}
   if(e.type==='point'){

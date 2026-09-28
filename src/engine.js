@@ -71,7 +71,8 @@ export class Match {
   }
   pushAtBoundary(){
     const p=this.player,a=this.ai;
-    if(p.pushCooldown>0||this.distance>1.58||a.x<4.62||p.state==='attack'||a.state==='attack')return false;
+    // 몸받음은 상대를 이미 경계선까지 몰아넣은 뒤에만 성립한다.
+    if(p.pushCooldown>0||this.distance>1.58||a.x<4.92||p.state==='attack'||a.state==='attack')return false;
     p.pushCooldown=.72;
     // 몸받음은 상대가 대부분 중심을 지키는 기술이다. 경계 바로 앞에서만
     // 무게 중심이 무너지면 장외가 된다.
@@ -252,13 +253,31 @@ export class Match {
     if(isPlayer&&this.aiEvade>0){this.aiEvade=0;this.event('evaded',{zone});return;}
     const guardStyle=other.guardStyle;
     const guarded=guardStyle===0?['men','smallMen','hikiMen'].includes(zone):guardStyle===1?zone==='kote':['do','hikiDo','gyakuDo'].includes(zone);
-    if(!isPlayer&&(other.state==='guard'||other.guardHeld>0)&&guarded){
+    const defending=other.state==='guard'||other.guardHeld>0;
+    if(defending&&guarded){
       this.stats.blocks++;other.impact=.4;this.opening=other.guardTime<.32?1.4:.8;
-      this.counterWindow=zone==='men'?this.opening:0;
+      if(!isPlayer)this.counterWindow=zone==='men'?this.opening:0;
       this.event('block',{perfect:other.guardTime<.32,zone,counterReady:zone==='men'});return;
+    }
+    if(defending){
+      // 완전히 맞지 않은 방어라도 죽도가 닿아 궤적을 흘릴 수 있다.
+      // 즉, 머리 방어 중 허리를 맞아도 항상 즉시 유효타가 나진 않는다.
+      const shiftFamily=guardStyle===1||guardStyle===2;
+      const partialBlock=shiftFamily&&['kote','do','hikiDo','gyakuDo'].includes(zone)?.62:guardStyle===0?.46:.52;
+      if(this.random()<partialBlock){
+        this.stats.blocks++;other.impact=.22;this.event('contact',{player:isPlayer,zone,reason:'방어가 죽도 궤적을 흘렸습니다.'});return;
+      }
     }
     if(isPlayer&&!f.counter&&other.state==='attack'&&other.elapsed<.22&&this.opening<=0&&!this.practice){
       this.event('parried',{zone});return;
+    }
+    // 닿았다고 자동 유효타는 아니다. 중심·압박·반격 여부가 부족하면
+    // 접촉으로 끝나므로 초급 대련도 몇 번의 공방을 거치게 된다.
+    const centre=this.distance>=1.38&&this.distance<=2.35?.10:0;
+    const baseQuality=f.counter?.90:this.opening>0?.76:(isPlayer?.54:(.31+this.level*.034));
+    const quality=clamp(baseQuality+centre+(isPlayer?this.pressure*.14:0)-(zone==='tsuki'?.10:0),.18,.92);
+    if(this.random()>quality){
+      other.impact=.16;this.event('contact',{player:isPlayer,zone,reason:'타격은 닿았지만 기검체일치가 부족합니다.'});return;
     }
     if(isPlayer)this.stats.contacts++;
     f.score++;f.points.push(zone);this.pointSequence.push({side:isPlayer?'player':'ai',zone});if(isPlayer)this.stats.valid++;

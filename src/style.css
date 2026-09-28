@@ -54,3 +54,19 @@ html,body{height:100%;overflow:hidden}#app{height:100dvh;display:flex;flex-direc
   .controller-pad{gap:5px}.controller-pad button{padding:2px 6px!important}.controller-pad button span{font-size:11px}.controller-pad button kbd{font-size:7px}
   .defense-controls{gap:3px}.defense-controls button{padding:2px 4px;font-size:10px}.defense-controls small{margin-top:1px;font-size:7px}
 }
+
+/* Intro keeps the illustrated fighters visible: only two compact choices remain. */
+#overlay:not(.hidden){padding-left:clamp(54px,7.4vw,150px)}
+#overlay:not(.hidden) .intro{width:min(390px,32vw)}
+#overlay:not(.hidden) .intro h1{white-space:nowrap;font-size:clamp(27px,3.05vw,49px);line-height:1.05;letter-spacing:-2.5px;margin:14px 0 23px}
+#overlay:not(.hidden) .rule-choice{margin-top:12px;font-size:10px}
+#overlay:not(.hidden) .rule-choice select{width:100%;padding:8px 10px;font-size:11px}
+#overlay:not(.hidden) .intro-actions{margin-top:16px}
+
+/* Reserve a little more safe space under the two-row controller on short laptops. */
+@media(max-height:820px) and (min-width:701px){
+  .controls{height:86px;min-height:86px;padding:4px 12px}
+  .controller-pad{gap:4px}
+  .controller-pad button{padding:2px 6px!important}
+  .defense-controls{gap:3px}
+}

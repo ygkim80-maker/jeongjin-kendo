@@ -215,7 +215,9 @@ class Fighter {
       // 죽도를 든 채 입장하는 자세. 3보 뒤 짧은 인사로 이어진다.
       hand.set(0,.88,.16);tip.set(0,.56,-.37);lean=.01;
     }else if(f.state==='bow'){
-      hand.set(0,.78,.16);tip.set(0,.48,-.32);lean=.31;sink=-.055;
+      // Keep the entire rig at one height while bowing.  Applying sink here
+      // moved the hip anchors twice and visually separated the torso from the legs.
+      hand.set(0,.78,.16);tip.set(0,.48,-.32);lean=.31;sink=0;
     }else if(f.state==='approach'){
       hand.set(0,.94,.19);tip.set(0,.70,-.14);lean=.01;
     }else if(f.state==='draw'){

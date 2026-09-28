@@ -196,7 +196,9 @@ $('match-mode').addEventListener('change',()=>{$('start-match-mode').value=$('ma
 restoreSettings();syncNames();
 document.querySelectorAll('[data-stance]').forEach(b=>b.onclick=()=>{if(match.player.state==='attack')return;match.stance=b.dataset.stance;updateUI();});
 function loseFocus(){pressedCodes.clear();clearInput();if(started&&!match.finished)setPaused(true,false);}
-window.addEventListener('blur',loseFocus);document.addEventListener('visibilitychange',()=>{if(document.hidden)loseFocus();});
+// A momentary browser focus change (for example using the app controls) must
+// not freeze a live bout.  Only a genuinely hidden tab is paused for safety.
+document.addEventListener('visibilitychange',()=>{if(document.hidden)loseFocus();});
 function frame(now){
   const dt=Math.min((now-last)/1000||.016,.1);last=now;
   const active=started&&!paused&&!match.finished;

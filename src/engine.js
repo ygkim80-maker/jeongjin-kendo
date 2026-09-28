@@ -244,7 +244,6 @@ export class Match {
     const reachable=(f.counter?this.distance>=1.045&&this.distance<=2.65:closeEnough)&&f.startDistance<=startingReach;
     if(!reachable||(zone==='tsuki'&&this.distance<1.75)){this.event('miss',{player:isPlayer,zone,reason:zone==='tsuki'&&this.distance<1.75?'너무 가깝습니다. 반 걸음 물러나세요.':'죽도가 닿기에는 거리가 멉니다.'});return;}
     if(isPlayer&&this.aiEvade>0){this.aiEvade=0;this.event('evaded',{zone});return;}
-    if(isPlayer&&this.aiGuard>0){this.aiGuard=0;this.stats.parries++;this.event('parried',{zone,active:true});return;}
     const guardStyle=other.guardStyle;
     const guarded=guardStyle===0?['men','smallMen','hikiMen'].includes(zone):guardStyle===1?zone==='kote':['do','hikiDo','gyakuDo'].includes(zone);
     if(!isPlayer&&(other.state==='guard'||other.guardHeld>0)&&guarded){

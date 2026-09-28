@@ -165,16 +165,16 @@ export class Match {
       return;
     }
     if(['idle','guard','seme'].includes(p.state)){
-      const next=(input.guard||input.push)?'guard':input.seme?'seme':'idle';
+      const next=(input.guard||input.menGuard)?'guard':input.seme?'seme':'idle';
       if(p.state!==next){
         p.state=next;p.elapsed=0;
-        if(next==='guard')p.guardStyle=(p.guardStyle+1+Math.floor(this.clock*11)%2)%3;
+        if(next==='guard')p.guardStyle=input.menGuard?0:1+(Math.floor(this.clock*11)%2);
         if(next==='seme'){p.semeStyle=Math.floor(this.random()*3);p.irimi=this.random()<.5;p.semeSwitch=.48+this.random()*.42;if(p.irimi)this.event('irimi');}
         else p.irimi=false;
       }
       if(p.state==='seme'){p.semeSwitch-=dt;if(p.semeSwitch<=0){p.irimi=this.random()<.48;p.semeStyle=Math.floor(this.random()*3);p.semeSwitch=.48+this.random()*.42;}}
       p.guardTime=p.state==='guard'?p.guardTime+dt:0;
-      p.guardHeld=(input.guard||input.push)?.24:Math.max(0,p.guardHeld-dt);
+      p.guardHeld=(input.guard||input.menGuard)?.24:Math.max(0,p.guardHeld-dt);
       const move=(input.forward?1:0)-(input.back?1:0),direction=input.back?-1:p.irimi?1:move;
       p.velocity=direction*(p.state==='guard'?.85:p.irimi?1.26:p.state==='seme'?0:2.2);
       p.x=clamp(p.x+p.velocity*dt,-5.4,a.x-1.05);
@@ -227,7 +227,9 @@ export class Match {
     if(!reachable||(zone==='tsuki'&&this.distance<1.75)){this.event('miss',{player:isPlayer,zone,reason:zone==='tsuki'&&this.distance<1.75?'너무 가깝습니다. 반 걸음 물러나세요.':'죽도가 닿기에는 거리가 멉니다.'});return;}
     if(isPlayer&&this.aiEvade>0){this.aiEvade=0;this.event('evaded',{zone});return;}
     if(isPlayer&&this.aiGuard>0){this.aiGuard=0;this.stats.parries++;this.event('parried',{zone,active:true});return;}
-    if(!isPlayer&&(other.state==='guard'||other.guardHeld>0)){
+    const guardStyle=other.guardStyle;
+    const guarded=guardStyle===0?['men','smallMen','hikiMen'].includes(zone):guardStyle===1?zone==='kote':['do','hikiDo','gyakuDo'].includes(zone);
+    if(!isPlayer&&(other.state==='guard'||other.guardHeld>0)&&guarded){
       this.stats.blocks++;other.impact=.4;this.opening=other.guardTime<.32?1.4:.8;
       this.counterWindow=zone==='men'?this.opening:0;
       this.event('block',{perfect:other.guardTime<.32,zone,counterReady:zone==='men'});return;

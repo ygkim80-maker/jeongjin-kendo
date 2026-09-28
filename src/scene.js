@@ -183,10 +183,10 @@ class Fighter {
     box(this.head,.16,.22,.08,this.armor,0,-.245,.16);
     this.ribbon=box(this.head,.022,.42,.012,this.tape,.09,-.19,-.22);
     this.legs=[];for(const x of [-.14,.14]){
-      // Legs must share the torso rig.  Keeping them on root made a bow rotate
-      // only the upper body, leaving a visible gap at the waist.
-      const upper=rod(this.body,.079,this.fabric),lower=rod(this.body,.067,this.fold);
-      const foot=ellipsoid(this.body,.12,[.54,.32,1.45],this.skin,x,.041,.1);
+      // Legs and hakama share the pelvis rig, so the lower body cannot lag
+      // behind a torso transition during the bow or a technique.
+      const upper=rod(this.pelvis,.079,this.fabric),lower=rod(this.pelvis,.067,this.fold);
+      const foot=ellipsoid(this.pelvis,.12,[.54,.32,1.45],this.skin,x,-.999,.1);
       this.legs.push({upper,lower,foot});
     }
     this.arms=[];for(const x of [-1,1]){
@@ -232,6 +232,8 @@ class Fighter {
       hand.set(0,.94,.19);tip.set(0,.70,-.14);lean=.01;
     }else if(f.state==='draw'){
       const k=clamp(f.elapsed/.55,0,1);hand.lerp(V(0,1.19,.38),k);tip.lerp(V(0,1.64,1.42),k);lean=0;
+    }else if(f.state==='clinch'){
+      hand.set(0,1.30,.28);tip.set(0,1.50,.82);lean=.035;lunge=.08;
     }else if(f.state==='guard'){
       if(f.guardStyle===1){hand.set(.13,1.43,.42);tip.set(-.52,1.68,.72);lean=-.018;twist=-.08;}
       else if(f.guardStyle===2){hand.set(-.16,1.28,.43);tip.set(.58,1.55,.68);lean=-.045;twist=.12;}
@@ -259,12 +261,12 @@ class Fighter {
     for(let i=0;i<2;i++){
       const leg=this.legs[i],x=i===0?-.14:.14,z=(i===0?-.2:.23)+(i===0?-gait:gait)+(i===1?this.pose.frontOffset:this.pose.backOffset);
       const lift=i===1?this.pose.frontLift:this.pose.backLift;
-      leg.foot.position.set(x,.041+Math.max(0,(i===0?-gait:gait))*.14+lift,z+.08);leg.foot.rotation.x=i===0?-this.pose.backLift*4:this.pose.frontLift;
+      leg.foot.position.set(x,-.999+Math.max(0,(i===0?-gait:gait))*.14+lift,z+.08);leg.foot.rotation.x=i===0?-this.pose.backLift*4:this.pose.frontLift;
       this.trousers[i].rotation.x=-Math.atan2(z,1.02);
       // The legs now live under `body`, so these anchors are body-local.
       // Adding sink/lunge a second time made the feet slide away whenever the
       // torso transitioned through the ceremony or an attack.
-      const hip=V(x,1.04,0),ankle=V(x,.1+lift,z),knee=V(x,.55,z*.65+.06+lift*.7);
+      const hip=V(x,0,0),ankle=V(x,-.94+lift,z),knee=V(x,-.49,z*.65+.06+lift*.7);
       between(leg.upper,hip,knee);between(leg.lower,knee,ankle);
     }
     const direction=this.pose.tip.clone().sub(this.pose.hand).normalize();

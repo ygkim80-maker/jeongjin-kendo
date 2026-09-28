@@ -147,9 +147,9 @@ function updateUI(){
   $('p-count').textContent=String(playerScore);$('a-count').textContent=String(aiScore);
   $('p-warnings').innerHTML='△'.repeat(match.player.warnings);$('a-warnings').innerHTML='△'.repeat(match.ai.warnings);
   const slot=match.representative?'대표전':teamRoster()[Math.min(Number(match.bout)||1,match.teamSize)-1];$('team-status').classList.add('hidden');document.querySelector('.scoreboard').classList.toggle('team-mode',match.team&&started);teamStrip.classList.toggle('hidden',!match.team||!started);if(match.team){$('team-progress').textContent=match.representative?'대표전':`${match.bout}경기/${match.teamSize}경기`;$('team-clock').textContent=timeText;$('team-round').textContent=match.representative?'단판 승부':`단체전 · ${slot}`;$('team-left-wins').textContent=match.teamScore.player;$('team-right-wins').textContent=match.teamScore.ai;$('team-totals').textContent=`승수 ${match.teamScore.player}:${match.teamScore.ai} · 다득점 ${match.teamPoints.player}:${match.teamPoints.ai}`;$('team-left-player').textContent=$('player-label').textContent;$('team-right-player').textContent=$('opponent-label').textContent;$('team-left-points').innerHTML=scoreCells(match.player.points,2,'player');$('team-right-points').innerHTML=scoreCells(match.ai.points,2,'ai');}
-  const d=match.distance,label=d<1.25?'코등이 간격':d<=2.65?'일족일도':'원거리';$('distance-label').textContent=label;
+  const d=match.distance,label=match.tsubaFight?'코등이 싸움':d<1.25?'코등이 간격':d<=2.65?'일족일도':'원거리';$('distance-label').textContent=label;
   $('hud-distance').textContent=match.team?`승수 ${match.teamScore.player}:${match.teamScore.ai} · 다득점 ${match.teamPoints.player}:${match.teamPoints.ai}`:label;$('control-distance').textContent=label;$('distance-marker').style.left=`${clamp((d-.3)/10.5*100,0,100)}%`;
-  $('distance-help').textContent=d<1.25?'너무 가깝습니다. 반 걸음 물러나세요.':d<=2.65?'죽도가 닿는 거리입니다. 빈틈을 노리세요.':'한 걸음씩 들어가 타격 거리를 만드세요.';
+  $('distance-help').textContent=match.tsubaFight?'코등이 싸움 중입니다. ← + W/S로 퇴격머리를 연결하세요.':d<1.25?'너무 가깝습니다. E를 누르면 코등이 싸움으로 들어갑니다.':d<=2.65?'죽도가 닿는 거리입니다. 빈틈을 노리세요.':'한 걸음씩 들어가 타격 거리를 만드세요.';
   $('pressure-fill').style.width=`${match.pressure*100}%`;$('hud-pressure').style.width=`${match.pressure*100}%`;$('pressure-label').textContent=match.opening>0?'빈틈':match.pressure>.45?'압박 중':'대치';$('hud-opening').textContent=$('pressure-label').textContent;
   if(match.clock>cueUntil)$('cue').classList.remove('show');if(match.clock>pointUntil)$('point-flash').classList.remove('show');
   const inp=input();document.querySelectorAll('[data-hold]').forEach(b=>b.classList.toggle('active',!!inp[b.dataset.hold]||(b.dataset.hold==='guard'&&!!inp.push)));
@@ -168,7 +168,7 @@ let settingsWasPaused=false;
 $('settings-toggle').onclick=()=>{settingsWasPaused=paused;setPaused(true,false);$('settings-panel').showModal();};
 $('settings-close').onclick=()=>$('settings-panel').close();$('settings-panel').addEventListener('close',()=>{if(!settingsWasPaused)setPaused(false,false);});
 $('settings-save').onclick=saveSettings;
-const keys={ArrowLeft:'back',ArrowRight:'forward',Space:'seme',Digit1:'push',ShiftLeft:'guard',ShiftRight:'guard'};
+const keys={ArrowLeft:'back',ArrowRight:'forward',ArrowUp:'menGuard',Space:'seme',Digit1:'push',ShiftLeft:'guard',ShiftRight:'guard'};
 const pressedCodes=new Set();
 window.addEventListener('keydown',e=>{
   if(['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)||$('help').open||$('settings-panel').open)return;

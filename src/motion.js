@@ -18,13 +18,14 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   // Small men keeps the same flying entry, but the shinai rises only briefly instead of a full overhead chamber.
   if(zone==='smallMen'){chamber.set(0,1.94,.26);hit.set(0,1.80,.84);theta0=-.16;theta1=1.39;}
   if(zone==='hikiMen'){chamber.set(0,1.85,.19);hit.set(0,1.68,.66);theta0=-.48;theta1=1.34;}
-  // Directions are from the player's own viewpoint: hiki-do and kaeshi-do
-  // travel left → right; gyaku-do travels right → left.
+  // The rendered player is rotated toward the white player.  Therefore the
+  // visible screen sweep has to be mirrored against the model-local x axis:
+  // hiki-do / kaeshi-do visibly travel left → right, gyaku-do right → left.
   if(zone==='do'){chamber.set(-.30,2.18,.12);hit.set(.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
-  if(zone==='hikiDo'){chamber.set(-.38,2.14,.12);hit.set(.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=-1.18;yaw1=.42;}
-  if(zone==='gyakuDo'){chamber.set(.38,2.14,.12);hit.set(-.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=1.18;yaw1=-.42;}
+  if(zone==='hikiDo'){chamber.set(.38,2.14,.12);hit.set(-.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=1.18;yaw1=-.42;}
+  if(zone==='gyakuDo'){chamber.set(-.38,2.14,.12);hit.set(.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=-1.18;yaw1=.42;}
   if(zone==='tsuki'){chamber.set(0,1.26,.19);hit.set(0,1.5,.81);theta0=1.12;theta1=1.27;}
-  if(counter){chamber.set(-.38,2.20,.18);hit.set(.32,1.21,.70);theta0=.28;theta1=1.72;yaw0=-1.18;yaw1=.42;}
+  if(counter){chamber.set(.38,2.20,.18);hit.set(-.32,1.21,.70);theta0=.28;theta1=1.72;yaw0=1.18;yaw1=-.42;}
   const blade=(theta,yaw)=>v(Math.sin(yaw)*Math.sin(theta),Math.cos(theta),Math.cos(yaw)*Math.sin(theta));
   const chamberDir=blade(theta0,yaw0),contactDir=blade(theta1,yaw1);
   const waist=['do','hikiDo','gyakuDo'].includes(zone),cutSign=zone==='gyakuDo'?-1:1;

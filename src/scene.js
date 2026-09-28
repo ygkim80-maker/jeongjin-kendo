@@ -214,8 +214,9 @@ class Fighter {
     const wind=strikeWind(f.zone,player,level);
     // Every committed cut exits on a lane beside the opponent instead of
     // stopping in front of them or visually passing through their body.
-    const passProgress=f.state==='attack'?smooth((f.elapsed-(wind-.09))/(TIMING.recovery+.15)):0;
-    const passTarget=(player?-1:1)*.66*passProgress;
+    const passProgress=f.state==='attack'?smooth((f.elapsed-(wind-.11))/(TIMING.recovery+.13)):0;
+    const passWidth=f.zone==='men'?.84:.66;
+    const passTarget=(player?-1:1)*passWidth*passProgress;
     this.passOffset=mix(this.passOffset??0,passTarget,1-Math.exp(-dt*(f.state==='attack'?22:7)));
     this.root.position.z=this.passOffset;
     // 상단세는 손을 이마 위에 두고 죽도 끝을 등 뒤로 충분히 눕힌다.
@@ -236,7 +237,7 @@ class Fighter {
     }else if(f.state==='draw'){
       const k=clamp(f.elapsed/.55,0,1);hand.lerp(V(0,1.19,.38),k);tip.lerp(V(0,1.64,1.42),k);lean=0;
     }else if(f.state==='clinch'){
-      hand.set(0,1.30,.28);tip.set(0,1.50,.82);lean=.035;lunge=.08;
+      hand.set(0,1.34,.36);tip.set(0,1.55,.70);lean=.018;lunge=0;
     }else if(f.state==='guard'){
       if(f.guardStyle===1){hand.set(.13,1.43,.42);tip.set(-.52,1.68,.72);lean=-.018;twist=-.08;}
       else if(f.guardStyle===2){hand.set(-.16,1.28,.43);tip.set(.58,1.55,.68);lean=-.045;twist=.12;}

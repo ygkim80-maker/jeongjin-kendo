@@ -30,8 +30,12 @@ export class Match {
   event(type,extra={}){this.events.push({type,...extra});}
   drain(){const e=this.events;this.events=[];return e;}
   engageTsuba(){
-    if(this.finished||this.ceremony||this.pointWait>0||this.forcedRetreat>0||this.distance>=1.36||this.player.state==='attack'||this.ai.state==='attack')return false;
+    if(this.finished||this.ceremony||this.pointWait>0||this.forcedRetreat>0||this.distance>=1.36)return false;
     this.tsubaFight=true;this.clinchTime=0;
+    // E는 근접 중인 상대의 예약 공격보다 우선한다. 코등이가 닿는
+    // 간격을 고정해 몸통이 겹쳐 보이지 않게 한다.
+    const center=(this.player.x+this.ai.x)/2;
+    this.player.x=center-.59;this.ai.x=center+.59;
     Object.assign(this.player,{state:'clinch',elapsed:0,velocity:0,clinch:true});
     Object.assign(this.ai,{state:'clinch',elapsed:0,velocity:0,clinch:true});
     this.event('tsuba');return true;
@@ -98,11 +102,12 @@ export class Match {
   }
   attack(zone){
     if(!attacks.includes(zone)||this.finished||this.ceremony||this.pointWait>0||this.forcedRetreat>0) return false;
-    // During a declared tsuba-zeriai the referee flow separates both players
-    // first; no cut may jump straight out of the clinch.
-    if(this.tsubaFight)return false;
+    // 코등이 싸움에서는 퇴격머리만 빠져나오며 유효타를 낼 수 있다.
+    const hikiExit=this.tsubaFight&&zone==='hikiMen';
+    if(this.tsubaFight&&!hikiExit)return false;
     const counter=zone==='do'&&this.counterWindow>0;
-    if(!['idle','seme'].includes(this.player.state)&&!(counter&&this.player.state==='guard')) return false;
+    if(!hikiExit&&!['idle','seme'].includes(this.player.state)&&!(counter&&this.player.state==='guard')) return false;
+    if(hikiExit){this.tsubaFight=false;this.clinchTime=0;Object.assign(this.ai,{state:'idle',elapsed:0,clinch:false});}
     if(zone==='hikiDo'||zone==='gyakuDo')this.stance='chudan';
     if(!this.practice) this.prepareDefense(zone,counter);
     Object.assign(this.player,{state:'attack',zone,elapsed:0,resolved:false,counter,startDistance:this.distance,startX:this.player.x,opponentX:this.ai.x});
@@ -118,6 +123,7 @@ export class Match {
     else if(this.random()<evadeChance){this.aiEvade=.46;this.event('ai_evade',{zone});}
   }
   aiAttack(){
+    if(this.tsubaFight||this.forcedRetreat>0||this.ceremony||this.pointWait>0)return false;
     const close=this.distance<1.5;
     const pool=close?['hikiMen','hikiDo','kote','do']:['men','smallMen','kote','do','tsuki','gyakuDo'];
     let index=Math.min(pool.length-1,Math.floor(this.random()*pool.length)),zone=pool[index];
@@ -240,7 +246,7 @@ export class Match {
   resolve(f,other,isPlayer){
     const zone=f.zone;
     const startingReach=zone==='men'?2.55:zone==='tsuki'?2.3:2.4;
-    const closeEnough=zone==='men'?this.distance>=1.05&&this.distance<=2.65:this.inRange;
+    const closeEnough=['men','hikiMen'].includes(zone)?this.distance>=1.05&&this.distance<=2.65:this.inRange;
     const reachable=(f.counter?this.distance>=1.045&&this.distance<=2.65:closeEnough)&&f.startDistance<=startingReach;
     if(!reachable||(zone==='tsuki'&&this.distance<1.75)){this.event('miss',{player:isPlayer,zone,reason:zone==='tsuki'&&this.distance<1.75?'너무 가깝습니다. 반 걸음 물러나세요.':'죽도가 닿기에는 거리가 멉니다.'});return;}
     if(isPlayer&&this.aiEvade>0){this.aiEvade=0;this.event('evaded',{zone});return;}

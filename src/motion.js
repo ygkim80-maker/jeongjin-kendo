@@ -45,9 +45,9 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   const flight=clamp((e-(wind-.135))/.135,0,1);
   const feet=attackFeet(e,wind,zone);
   if(counter){feet.frontOffset*=.85;feet.backOffset*=.85;}
-  const waistLunge=counter?.82:zone==='men'?1.12:zone==='smallMen'?.78:zone==='kote'?.66:zone==='hikiDo'?-.30:zone==='gyakuDo'?.70:zone==='do'?.56:.48;
-  const entryLean=zone==='men'?.20:zone==='smallMen'?.15:zone==='kote'?.12:zone==='hikiMen'?.095:zone==='hikiDo'?-.055:.065;
+  const waistLunge=counter?.82:zone==='men'?1.28:zone==='smallMen'?.78:zone==='kote'?.66:zone==='hikiDo'?-.30:zone==='gyakuDo'?.70:zone==='do'?.56:.48;
+  const entryLean=zone==='men'?.24:zone==='smallMen'?.15:zone==='kote'?.12:zone==='hikiMen'?.095:zone==='hikiDo'?-.055:.065;
   return {hand,tip:hand.clone().addScaledVector(dir,1.13),lean:-.018*prep+entryLean*weight,lunge:waistLunge*weight,
     twist:(waist?.22*cutSign:.055)*weight-(waist?.08*cutSign:.018)*prep,
-    sink:-.025*prep-.015*weight,frontLift:Math.sin(flight*Math.PI)*(zone==='hikiDo'?.025:zone==='men'?.15:zone==='smallMen'?.11:.075),...feet};
+    sink:-.025*prep-.015*weight,frontLift:Math.sin(flight*Math.PI)*(zone==='hikiDo'?.025:zone==='men'?.18:zone==='smallMen'?.11:.075),...feet};
 }

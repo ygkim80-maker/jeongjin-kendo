@@ -32,7 +32,9 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   if(zone==='do'){chamber.set(.42,2.27,.10);hit.set(-.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
   if(zone==='hikiDo'){chamber.set(.42,2.27,.10);hit.set(-.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
   if(zone==='gyakuDo'){chamber.set(-.42,2.27,.10);hit.set(.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=-1.24;yaw1=.42;}
-  if(zone==='tsuki'){chamber.set(0,1.26,.19);hit.set(0,1.5,.81);theta0=1.12;theta1=1.27;}
+  // Thrust is a straight neck-line action, not a raised empty-air poke.  The
+  // contact key targets the defender's tare/men gap at issoku-itto distance.
+  if(zone==='tsuki'){chamber.set(0,1.40,.25);hit.set(0,1.42,.42);theta0=1.32;theta1=1.36;}
   if(counter){chamber.set(.42,2.31,.16);hit.set(-.32,1.21,.70);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
   const blade=(theta,yaw)=>v(Math.sin(yaw)*Math.sin(theta),Math.cos(theta),Math.cos(yaw)*Math.sin(theta));
   const chamberDir=blade(theta0,yaw0),contactDir=blade(theta1,yaw1);

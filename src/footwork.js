@@ -7,6 +7,9 @@ export function attackTravel(elapsed,wind,zone='do'){
   if(zone==='hikiMen')return -.22*drive-.38*follow;
   if(zone==='hikiDo')return -.34*drive-.46*follow;
   if(zone==='gyakuDo')return .36*drive+.38*follow;
+  // Tsuki commits one clear, longer step into the throat line.  Its follow
+  // through is restrained, unlike a cut which must pass the opponent.
+  if(zone==='tsuki')return .58*drive+.18*follow;
   return .38*drive+.28*follow;
 }
 export function attackFeet(elapsed,wind,zone='do'){

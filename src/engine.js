@@ -4,6 +4,9 @@ export const TIMING={playerWind:.19,recovery:.29,aiWind:level=>clamp(.82-level*.
 export const strikeWind=(zone,isPlayer,level)=>isPlayer?(zone==='men'?.14:zone==='smallMen'?.10:TIMING.playerWind):TIMING.aiWind(level);
 export const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const attacks = ['men','smallMen','hikiMen','kote','do','tsuki','hikiDo','gyakuDo'];
+// The scoring window follows the physical end of the animated shinai.  This
+// keeps a visual miss from becoming an invisible ippon at either extreme.
+const CONTACT_RANGE={men:[1.58,2.52],smallMen:[1.45,2.35],hikiMen:[1.05,1.78],kote:[1.66,2.30],do:[1.68,2.28],hikiDo:[1.05,1.72],gyakuDo:[1.68,2.28],tsuki:[1.52,2.22]};
 const DIFFICULTY = {
   1:{guard:.15,evade:.06,attackDelay:1.55,point:.83},
   2:{guard:.28,evade:.12,attackDelay:1.28,point:.72},
@@ -111,7 +114,11 @@ export class Match {
   advanceStrike(f,isPlayer,dt){
     const wind=strikeWind(f.zone,isPlayer,this.level);
     const stride=(attackTravel(f.elapsed,wind,f.zone)-attackTravel(f.elapsed-dt,wind,f.zone))*(f.counter?1.15:1);
-    const available=Math.max(0,this.distance-1.05),actual=stride>=0?Math.min(stride,available):stride;
+    // Stop the drive at the animated contact distance.  The following phase
+    // can then carry the fighter around the opponent without the shinai
+    // passing through the torso before the referee's decision.
+    const contactFloor=CONTACT_RANGE[f.zone]?.[0]??1.05;
+    const available=Math.max(0,this.distance-contactFloor),actual=stride>=0?Math.min(stride,available):stride;
     const old=f.x;f.x=clamp(f.x+(isPlayer?1:-1)*actual,-5.4,5.4);f.velocity=(f.x-old)/dt;
   }
   attack(zone){
@@ -269,10 +276,11 @@ export class Match {
   }
   resolve(f,other,isPlayer){
     const zone=f.zone;
-    const startingReach=zone==='men'?2.55:zone==='tsuki'?2.3:2.4;
-    const closeEnough=['men','hikiMen'].includes(zone)?this.distance>=1.05&&this.distance<=2.65:this.inRange;
+    const [near,far]=CONTACT_RANGE[zone]??[1.25,2.65];
+    const startingReach=zone==='men'?2.55:zone==='tsuki'?2.45:2.4;
+    const closeEnough=this.distance>=near&&this.distance<=far;
     const reachable=(f.counter?this.distance>=1.045&&this.distance<=2.65:closeEnough)&&f.startDistance<=startingReach;
-    if(!reachable||(zone==='tsuki'&&this.distance<1.75)){this.event('miss',{player:isPlayer,zone,reason:zone==='tsuki'&&this.distance<1.75?'너무 가깝습니다. 반 걸음 물러나세요.':'죽도가 닿기에는 거리가 멉니다.'});return;}
+    if(!reachable){this.event('miss',{player:isPlayer,zone,reason:zone==='tsuki'&&this.distance<near?'찌름은 한 걸음 거리에서 목선을 노리세요.':'죽도가 닿기에는 거리가 맞지 않습니다.'});return;}
     if(isPlayer&&this.aiEvade>0){this.aiEvade=0;this.event('evaded',{zone});return;}
     const guardStyle=other.guardStyle;
     const guarded=guardStyle===0?['men','smallMen','hikiMen'].includes(zone):guardStyle===1?zone==='kote':['do','hikiDo','gyakuDo'].includes(zone);
@@ -298,7 +306,10 @@ export class Match {
     // 접촉으로 끝나므로 초급 대련도 몇 번의 공방을 거치게 된다.
     const centre=this.distance>=1.38&&this.distance<=2.35?.10:0;
     const baseQuality=f.counter?.90:this.opening>0?.76:(isPlayer?.54:(.31+this.level*.034));
-    const quality=clamp(baseQuality+centre+(isPlayer?this.pressure*.14:0)-(zone==='tsuki'?.10:0),.18,.92);
+    // Tsuki is deliberately scarce, but it can score cleanly at the correct
+    // distance instead of being structurally unable to earn an ippon.
+    const tsuki=zone==='tsuki';
+    const quality=clamp(baseQuality+centre+(isPlayer?this.pressure*.14:0)-(tsuki?.49:0),tsuki?.08:.18,.92);
     if(this.random()>quality){
       other.impact=.16;this.event('contact',{player:isPlayer,zone,reason:'타격은 닿았지만 기검체일치가 부족합니다.'});return;
     }

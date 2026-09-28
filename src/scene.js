@@ -246,9 +246,9 @@ class Fighter {
       // Seme stays upright; irimi advances from the hips and feet while the blade keeps the center line.
       const phase=time*(f.semeStyle===1?10:f.semeStyle===2?7:8);
       hand.z+=f.irimi?.16:.07;
-      if(f.semeStyle===1){tip.x=Math.sin(phase)*.13;tip.y+=Math.cos(phase)*.07;tip.z+=.10;hand.x=Math.sin(phase)*.025;twist=Math.sin(phase)*.045;}
-      else if(f.semeStyle===2){tip.x=Math.sin(phase)*.16;tip.z+=.07+Math.cos(phase)*.055;hand.x=Math.sin(phase)*.035;twist=Math.sin(phase)*.075;}
-      else{tip.x=Math.sin(phase)*.052;tip.z+=.11;}
+      if(f.semeStyle===1){tip.x=Math.sin(phase)*.13;tip.y+=Math.cos(phase)*.077;tip.z+=.10;hand.x=Math.sin(phase)*.025;hand.y+=Math.cos(phase)*.010;twist=Math.sin(phase)*.045;}
+      else if(f.semeStyle===2){tip.x=Math.sin(phase)*.16;tip.y+=Math.cos(phase)*.035;tip.z+=.07+Math.cos(phase)*.055;hand.x=Math.sin(phase)*.035;hand.y+=Math.cos(phase)*.007;twist=Math.sin(phase)*.075;}
+      else{tip.x=Math.sin(phase)*.052;tip.y+=Math.cos(phase)*.025;tip.z+=.11;hand.y+=Math.cos(phase)*.005;}
       if(f.irimi)tip.z+=.10;
       lean=f.irimi?.008:.025;
     }else if(f.state==='hit'){

@@ -89,7 +89,10 @@ function action(zone){
   unlock();if(!match.attack(technique)&&match.player.state==='attack'&&match.player.elapsed>TIMING.playerWind+.12)buffer={zone:technique,until:match.clock+.2};
 }
 function events(){for(const e of match.drain()){
-  if(e.type==='warning')cue(`${NAMES[e.zone]} 공격이 옵니다 · 방어 SPACE`,1.1);
+  if(e.type==='warning'){
+    const defenseKey=['men','smallMen','hikiMen'].includes(e.zone)?'↑ 머리 방어':['kote','do','hikiDo','gyakuDo'].includes(e.zone)?'SHIFT 손목·허리 방어':'간격 조절';
+    cue(`${NAMES[e.zone]} 공격이 옵니다 · ${defenseKey}`,1.1);
+  }
   if(e.type==='ceremony'){cue('입장 · 세 발 · 인사',1.35);}
   if(e.type==='ready'){sound('start');voice(e.call);cue(e.call==='시작'?'중단 정렬 · 시작':'중단 정렬 · 두 판째',1.1);verdict(e.call,'이제부터 유효격자를 노릴 수 있습니다.');}
   if(e.type==='clinch_break'){cue('근접 대치 · 서로 물러납니다',1);verdict('죽도를 맞대고 대치했습니다.','이 간격에서는 후퇴하거나 퇴격 머리로 변화를 만드세요.');}

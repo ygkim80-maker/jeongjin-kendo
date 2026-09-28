@@ -9,6 +9,10 @@ function bezier(a,b,c,d,t){const u=1-t;return a.clone().multiplyScalar(u*u*u).ad
 export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   const restDir=restTip.clone().sub(restHand).normalize();
   const prepDuration=Math.max(.035,wind-.11),swingDuration=wind-prepDuration,followDuration=.075;
+  // A kaeshi-do starts in the exact high men guard the player was using.
+  // Keeping it for a few frames makes the deflection read before the turn.
+  const parryDuration=counter?Math.min(.055,prepDuration*.62):0;
+  const parryHand=v(-.08,1.74,.40),parryDir=v(.8,.44,.23).normalize();
   const chamber=v(0,1.98,.08),hit=v(0,1.70,.68);
   let theta0=-.58,theta1=1.37,yaw0=0,yaw1=0;
   // Big men follows the compact men line: a higher chamber and longer flying
@@ -34,7 +38,8 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   const follow=hit.clone().add(v(waist?.05*cutSign:0,zone==='tsuki'?-.025:-.10,.035));
   const followDir=blade(theta1+(zone==='tsuki'?.025:.20),yaw1+(waist?.2*cutSign:0));
   let hand,dir;
-  if(e<prepDuration){const t=ease(e/prepDuration);hand=(counter?v(-.08,1.74,.4):restHand.clone()).lerp(chamber,t);dir=(counter?v(.8,.44,.23).normalize():restDir.clone()).lerp(chamberDir,t).normalize();}
+  if(counter&&e<parryDuration){hand=parryHand.clone();dir=parryDir.clone();}
+  else if(e<prepDuration){const start=counter?parryHand:restHand.clone(),startDir=counter?parryDir:restDir.clone(),remaining=Math.max(.001,prepDuration-parryDuration),t=ease(counter?(e-parryDuration)/remaining:e/prepDuration);hand=start.lerp(chamber,t);dir=startDir.lerp(chamberDir,t).normalize();}
   else if(e<=wind){
     const t=clamp((e-prepDuration)/swingDuration,0,1);
     const waistArc=['do','hikiDo','gyakuDo'].includes(zone)||counter;

@@ -216,7 +216,9 @@ class Fighter {
     // Every committed cut exits on a lane beside the opponent instead of
     // stopping in front of them or visually passing through their body.
     const passProgress=f.state==='attack'?smooth((f.elapsed-(wind-.11))/(TIMING.recovery+.13)):0;
-    const passWidth=f.zone==='men'?.84:.66;
+    // Each finish has its own lane: a big men clears furthest, kote stays
+    // compact, and waist cuts arc around the opponent rather than through it.
+    const passWidth=f.zone==='men'?.92:f.zone==='smallMen'?.74:f.zone==='kote'?.58:['do','gyakuDo'].includes(f.zone)?.76:f.zone==='hikiDo'?.52:.66;
     const passTarget=(player?-1:1)*passWidth*passProgress;
     this.passOffset=mix(this.passOffset??0,passTarget,1-Math.exp(-dt*(f.state==='attack'?22:7)));
     this.root.position.z=this.passOffset;

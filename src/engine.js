@@ -119,7 +119,11 @@ export class Match {
     // 코등이 싸움에서는 퇴격머리만 빠져나오며 유효타를 낼 수 있다.
     const hikiExit=this.tsubaFight&&zone==='hikiMen';
     if(this.tsubaFight&&!hikiExit)return false;
-    const counter=zone==='do'&&this.counterWindow>0;
+    // 받아허리는 머리 방어가 판정된 직후뿐 아니라, 머리 공격을 실제로
+    // 받아내고 있는 찰나에도 A로 연결된다. 그렇지 않으면 일반 허리가 먼저
+    // 발동해 역허리처럼 보이는 문제가 생긴다.
+    const receivingMen=this.player.state==='guard'&&this.player.guardStyle===0&&this.ai.state==='attack'&&['men','smallMen','hikiMen'].includes(this.ai.zone);
+    const counter=zone==='do'&&(this.counterWindow>0||receivingMen);
     if(!hikiExit&&!['idle','seme'].includes(this.player.state)&&!(counter&&this.player.state==='guard')) return false;
     if(hikiExit){this.tsubaFight=false;this.clinchTime=0;Object.assign(this.ai,{state:'idle',elapsed:0,clinch:false});}
     if(zone==='hikiDo'||zone==='gyakuDo')this.stance='chudan';

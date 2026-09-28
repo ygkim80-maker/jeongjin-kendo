@@ -21,11 +21,13 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   // The rendered player is rotated toward the white player.  Therefore the
   // visible screen sweep has to be mirrored against the model-local x axis:
   // hiki-do / kaeshi-do visibly travel left → right, gyaku-do right → left.
-  if(zone==='do'){chamber.set(-.30,2.18,.12);hit.set(.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
-  if(zone==='hikiDo'){chamber.set(.38,2.14,.12);hit.set(-.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=1.18;yaw1=-.42;}
-  if(zone==='gyakuDo'){chamber.set(-.38,2.14,.12);hit.set(.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=-1.18;yaw1=.42;}
+  // Waist cuts first lift just above the helmet and travel through a compact
+  // circular shoulder turn; they should never read as a vertical chop.
+  if(zone==='do'){chamber.set(-.34,2.30,.10);hit.set(.22,1.21,.69);theta0=.14;theta1=1.72;yaw0=-1.02;yaw1=.32;}
+  if(zone==='hikiDo'){chamber.set(.42,2.27,.10);hit.set(-.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
+  if(zone==='gyakuDo'){chamber.set(-.42,2.27,.10);hit.set(.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=-1.24;yaw1=.42;}
   if(zone==='tsuki'){chamber.set(0,1.26,.19);hit.set(0,1.5,.81);theta0=1.12;theta1=1.27;}
-  if(counter){chamber.set(.38,2.20,.18);hit.set(-.32,1.21,.70);theta0=.28;theta1=1.72;yaw0=1.18;yaw1=-.42;}
+  if(counter){chamber.set(.42,2.31,.16);hit.set(-.32,1.21,.70);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
   const blade=(theta,yaw)=>v(Math.sin(yaw)*Math.sin(theta),Math.cos(theta),Math.cos(yaw)*Math.sin(theta));
   const chamberDir=blade(theta0,yaw0),contactDir=blade(theta1,yaw1);
   const waist=['do','hikiDo','gyakuDo'].includes(zone),cutSign=zone==='gyakuDo'?-1:1;
@@ -35,7 +37,10 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   if(e<prepDuration){const t=ease(e/prepDuration);hand=(counter?v(-.08,1.74,.4):restHand.clone()).lerp(chamber,t);dir=(counter?v(.8,.44,.23).normalize():restDir.clone()).lerp(chamberDir,t).normalize();}
   else if(e<=wind){
     const t=clamp((e-prepDuration)/swingDuration,0,1);
-    const c1=chamber.clone().add(v((zone==='do'||counter)?-.12:0,.12,.24)),c2=hit.clone().add(v(0,.17,-.09));
+    const waistArc=['do','hikiDo','gyakuDo'].includes(zone)||counter;
+    // Lift into a shallow overhead arc, then let the shoulder turn carry the
+    // shinai across the target rather than dropping it straight down.
+    const c1=chamber.clone().add(v(waistArc?(chamber.x>0?.15:-.15):0,waistArc?.19:.12,.24)),c2=hit.clone().add(v(waistArc?(hit.x>0?.10:-.10):0,waistArc?.25:.17,-.09));
     hand=bezier(chamber,c1,c2,hit,t);
     // Accelerate the wrists through the contact instead of stopping at its key pose.
     const angular=Math.pow(t,1.55);dir=blade(mix(theta0,theta1,angular),mix(yaw0,yaw1,t));
@@ -49,6 +54,6 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   const waistLunge=counter?.82:zone==='men'?1.28:zone==='smallMen'?.78:zone==='kote'?.66:zone==='hikiDo'?-.30:zone==='gyakuDo'?.70:zone==='do'?.56:.48;
   const entryLean=zone==='men'?.24:zone==='smallMen'?.15:zone==='kote'?.12:zone==='hikiMen'?.095:zone==='hikiDo'?-.055:.065;
   return {hand,tip:hand.clone().addScaledVector(dir,1.13),lean:-.018*prep+entryLean*weight,lunge:waistLunge*weight,
-    twist:(waist?.22*cutSign:.055)*weight-(waist?.08*cutSign:.018)*prep,
+    twist:(waist?.31*cutSign:.055)*weight-(waist?.14*cutSign:.018)*prep,
     sink:-.025*prep-.015*weight,frontLift:Math.sin(flight*Math.PI)*(zone==='hikiDo'?.025:zone==='men'?.18:zone==='smallMen'?.11:.075),...feet};
 }

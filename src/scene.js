@@ -150,7 +150,9 @@ class Fighter {
   constructor(scene,side){
     this.root=new T.Group();scene.add(this.root);this.side=side;
     // Adult competitive build: the model is scaled from the sole, so height grows without floating above the floor.
-    this.root.scale.set(.98,1.10,.98);
+    // A competitive adult build: raise height from the sole and broaden the
+    // silhouette together, rather than making the helmet look oversized.
+    this.root.scale.set(1.08,1.16,1.08);
     // 천은 부드럽게, 호구와 죽도 금속은 윤기 있게 처리해 검은 외곽선 없이도
     // 실루엣과 소재가 분명하게 읽히도록 한다.
     const blue=side==='blue';this.fabric=toonMat(blue?'#172b49':'#f0eee3',.78);this.fold=toonMat(blue?'#15243c':'#d5d9d4',.84);this.armor=toonMat('#14212b',.28,.18);this.trim=toonMat('#53636a',.38,.22);this.skin=toonMat('#c5a284',.7);this.tape=toonMat(blue?'#c94140':'#ebe6cd',.58);this.metal=toonMat('#b5bcad',.26,.8);
@@ -259,7 +261,10 @@ class Fighter {
       const lift=i===1?this.pose.frontLift:this.pose.backLift;
       leg.foot.position.set(x,.041+Math.max(0,(i===0?-gait:gait))*.14+lift,z+.08);leg.foot.rotation.x=i===0?-this.pose.backLift*4:this.pose.frontLift;
       this.trousers[i].rotation.x=-Math.atan2(z,1.02);
-      const hip=V(x,1.04+this.pose.sink,this.pose.lunge*.15),ankle=V(x,.1+lift,z),knee=V(x,.55+this.pose.sink,z*.65+.06+lift*.7);
+      // The legs now live under `body`, so these anchors are body-local.
+      // Adding sink/lunge a second time made the feet slide away whenever the
+      // torso transitioned through the ceremony or an attack.
+      const hip=V(x,1.04,0),ankle=V(x,.1+lift,z),knee=V(x,.55,z*.65+.06+lift*.7);
       between(leg.upper,hip,knee);between(leg.lower,knee,ankle);
     }
     const direction=this.pose.tip.clone().sub(this.pose.hand).normalize();

@@ -21,10 +21,10 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   // Directions are from the player's own viewpoint: hiki-do and kaeshi-do
   // travel left → right; gyaku-do travels right → left.
   if(zone==='do'){chamber.set(-.30,2.18,.12);hit.set(.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
-  if(zone==='hikiDo'){chamber.set(-.30,2.14,.12);hit.set(.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
-  if(zone==='gyakuDo'){chamber.set(.30,2.14,.12);hit.set(-.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=.95;yaw1=-.32;}
+  if(zone==='hikiDo'){chamber.set(-.38,2.14,.12);hit.set(.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=-1.18;yaw1=.42;}
+  if(zone==='gyakuDo'){chamber.set(.38,2.14,.12);hit.set(-.32,1.21,.69);theta0=.28;theta1=1.72;yaw0=1.18;yaw1=-.42;}
   if(zone==='tsuki'){chamber.set(0,1.26,.19);hit.set(0,1.5,.81);theta0=1.12;theta1=1.27;}
-  if(counter){chamber.set(-.30,2.20,.18);hit.set(.23,1.21,.70);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
+  if(counter){chamber.set(-.38,2.20,.18);hit.set(.32,1.21,.70);theta0=.28;theta1=1.72;yaw0=-1.18;yaw1=.42;}
   const blade=(theta,yaw)=>v(Math.sin(yaw)*Math.sin(theta),Math.cos(theta),Math.cos(yaw)*Math.sin(theta));
   const chamberDir=blade(theta0,yaw0),contactDir=blade(theta1,yaw1);
   const waist=['do','hikiDo','gyakuDo'].includes(zone),cutSign=zone==='gyakuDo'?-1:1;

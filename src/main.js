@@ -160,7 +160,11 @@ function updateUI(){
   const counterButton=document.querySelector('[data-action="do"]');counterButton.classList.toggle('counter-ready',match.counterWindow>0);counterButton.querySelector('.attack-name').textContent=match.counterWindow>0?'받아허리':'허리';
   document.querySelectorAll('[data-stance]').forEach(b=>{const selected=b.dataset.stance===match.stance;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});
 }
-$('start').onclick=()=>start(false);$('practice').onclick=()=>start(true);$('pause').onclick=()=>setPaused(!paused);$('resume').onclick=()=>setPaused(false);$('restart').onclick=()=>start(match.practice);$('highlight').onclick=()=>{if(lastPoint&&dojo){dojo.highlight(lastPoint);$('highlight').textContent='슬로 재생 중';setTimeout(()=>{$('highlight').textContent='마지막 유효격자 다시 보기';},3300);}};
+$('start').onclick=()=>start(false);$('practice').onclick=()=>start(true);
+// The header button becomes the reliable exit control after a bout: previously
+// setPaused() intentionally ignored finished matches, leaving "대련 종료" inert.
+$('pause').onclick=()=>{if(match.finished){returnToIntro();return;}setPaused(!paused);};
+$('resume').onclick=()=>setPaused(false);$('restart').onclick=()=>start(match.practice);$('highlight').onclick=()=>{if(lastPoint&&dojo){dojo.highlight(lastPoint);$('highlight').textContent='슬로 재생 중';setTimeout(()=>{$('highlight').textContent='마지막 유효격자 다시 보기';},3300);}};
 $('sound').onclick=()=>{muted=!muted;unlock();$('sound').textContent=muted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(!muted));};
 $('camera').onclick=()=>{if(dojo)dojo.view=(dojo.view+1)%4;};
 $('difficulty').onchange=()=>{match.level=Number($('difficulty').value);if(started)verdict('맞수의 수준을 바꿨습니다.','다음 공격부터 새 수준에 맞춰 대응합니다.');};

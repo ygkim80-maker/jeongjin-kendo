@@ -134,7 +134,8 @@ export class Dojo {
     }
     this.player.update(playerState,match.clock,dt,true,match.level,match.pointWait,match.stance);
     this.ai.update(aiState,match.clock,dt,false,match.level,match.pointWait,'chudan');
-    for(const ref of this.referees){const sign=match.pointWait>0?(match.player.state==='hit'?-1:1):0;ref.red.rotation.z=mix(ref.red.rotation.z,sign===1?-2.5:0,1-Math.exp(-dt*9));ref.white.rotation.z=mix(ref.white.rotation.z,sign===-1?2.5:0,1-Math.exp(-dt*9));}
+    // Raised flags finish vertically overhead instead of at a diagonal.
+    for(const ref of this.referees){const sign=match.pointWait>0?(match.player.state==='hit'?-1:1):0;ref.red.rotation.z=mix(ref.red.rotation.z,sign===1?Math.PI:0,1-Math.exp(-dt*11));ref.white.rotation.z=mix(ref.white.rotation.z,sign===-1?-Math.PI:0,1-Math.exp(-dt*11));}
     const center=(match.player.x+match.ai.x)/2;
     const narrow=this.width/this.height<1;
     const poses=narrow?[V(1.0,4.1,12.8),V(.5,5.8,15),V(9,4.5,11),V(-9,4.5,11)]:[V(.7,3.5,9.5),V(2.8,2.85,8.5),V(7,2.5,6.4),V(-7,2.5,6.4)];

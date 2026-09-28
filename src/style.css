@@ -30,6 +30,17 @@ html,body{height:100%;overflow:hidden}#app{height:100dvh;display:flex;flex-direc
 /* Illustrated key art keeps the entry screen cinematic while live play stays fully 3D. */
 #overlay:not(.hidden){background:linear-gradient(90deg,#091a1af2 0%,#091a1ab8 35%,#091a1a30 72%,#091a1a9e 100%),url('/art/kendo-key-art-v1.png') center/cover no-repeat}#overlay:not(.hidden) .intro{position:relative;z-index:1;text-shadow:0 2px 12px #000b}
 
+/* Phone controls are direct touch pads; keyboard labels are deliberately hidden. */
+@media(pointer:coarse) and (max-width:700px){
+  .controls{height:158px;min-height:158px;grid-template-columns:76px minmax(0,1fr) 74px;padding:6px;gap:6px}
+  .controller-pad button{min-height:48px!important;padding:5px!important}
+  .controller-pad button span{font-size:12px}
+  .controls kbd{display:none}
+  .defense-controls{gap:4px}
+  .defense-controls button{font-size:10px;padding:4px 2px}
+  .joystick{width:58px;height:58px}
+}
+
 /* Entry is a setup screen, not a live match: do not show scores until the bell. */
 #app:has(#overlay:not(.hidden)) .scoreboard{display:none}
 #overlay:not(.hidden){top:0;align-items:center;overflow-y:auto;overscroll-behavior:contain;padding:clamp(20px,4vh,52px) clamp(20px,8vw,154px)}

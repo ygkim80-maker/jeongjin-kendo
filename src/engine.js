@@ -21,7 +21,7 @@ export class Match {
   reset({level=2,practice=false,team=false,teamSize=3,ruleSet='quick'}={}) {
     this.level=level; this.practice=practice;this.team=team;this.teamSize=teamSize;this.ruleSet=ruleSet;this.teamScore={player:0,ai:0};this.teamPoints={player:0,ai:0};this.teamResults=[];this.pointSequence=[];this.bout=1;this.representative=false;this.roundTime=ruleSet==='standard'?240:180;this.time=this.roundTime;this.clock=0;this.winTarget=2;
     this.player=this.fighter(-2.65); this.ai=this.fighter(2.65);
-    this.pressure=0; this.opening=0;this.clinchTime=0;this.clinchLimit=2.3;this.forcedRetreat=0;this.stoppage=0;this.pendingPenalty=null; this.aiThink=1.8; this.aiTactic='probe'; this.aiTacticTime=.8; this.lastAiZone=null;this.pointWait=0;this.counterWindow=0;this.aiGuard=0;this.aiEvade=0;
+    this.pressure=0; this.opening=0;this.clinchTime=0;this.clinchLimit=2.3;this.forcedRetreat=0;this.stoppage=0;this.pendingPenalty=null; this.aiThink=1.8; this.aiTactic='probe'; this.aiTacticTime=.8; this.lastAiZone=null;this.pointWait=0;this.counterWindow=0;this.aiGuard=0;this.aiEvade=0;this.tsubaFight=false;
     this.finished=false; this.winner=null; this.events=[]; this.stats={attacks:0,blocks:0,valid:0,contacts:0,parries:0};this.stance='chudan';this.ceremony=null;
   }
   fighter(x) { return {x,home:x,velocity:0,state:'idle',elapsed:0,zone:'men',resolved:false,score:0,points:[],warnings:0,guardTime:0,guardHeld:0,guardStyle:0,semeStyle:0,semeSwitch:0,irimi:false,clinch:false,impact:0,counter:false,startDistance:99,pushHeld:false,pushCooldown:0}; }
@@ -29,6 +29,13 @@ export class Match {
   get inRange(){return this.distance>=1.25&&this.distance<=2.65;}
   event(type,extra={}){this.events.push({type,...extra});}
   drain(){const e=this.events;this.events=[];return e;}
+  engageTsuba(){
+    if(this.finished||this.ceremony||this.pointWait>0||this.forcedRetreat>0||this.distance>=1.36||this.player.state==='attack'||this.ai.state==='attack')return false;
+    this.tsubaFight=true;this.clinchTime=0;
+    Object.assign(this.player,{state:'clinch',elapsed:0,velocity:0,clinch:true});
+    Object.assign(this.ai,{state:'clinch',elapsed:0,velocity:0,clinch:true});
+    this.event('tsuba');return true;
+  }
   beginCeremony(call='시작'){
     this.ceremony={elapsed:0,call};
     Object.assign(this.player,{x:-5.35,state:'entry',elapsed:0,velocity:0});
@@ -91,10 +98,13 @@ export class Match {
   }
   attack(zone){
     if(!attacks.includes(zone)||this.finished||this.ceremony||this.pointWait>0||this.forcedRetreat>0) return false;
+    const tsubaExit=this.tsubaFight&&zone==='hikiMen';
+    if(this.tsubaFight&&!tsubaExit)return false;
     const counter=zone==='do'&&this.counterWindow>0;
-    if(!['idle','seme'].includes(this.player.state)&&!(counter&&this.player.state==='guard')) return false;
+    if(!['idle','seme'].includes(this.player.state)&&!tsubaExit&&!(counter&&this.player.state==='guard')) return false;
     if(zone==='hikiDo'||zone==='gyakuDo')this.stance='chudan';
     if(!this.practice) this.prepareDefense(zone,counter);
+    if(tsubaExit){this.tsubaFight=false;this.player.clinch=this.ai.clinch=false;this.ai.state='idle';this.ai.elapsed=0;}
     Object.assign(this.player,{state:'attack',zone,elapsed:0,resolved:false,counter,startDistance:this.distance,startX:this.player.x,opponentX:this.ai.x});
     this.counterWindow=0;this.stats.attacks++; this.event('swing',{zone,counter}); return true;
   }

@@ -93,6 +93,7 @@ function events(){for(const e of match.drain()){
   if(e.type==='ceremony'){cue('입장 · 세 발 · 인사',1.35);}
   if(e.type==='ready'){sound('start');voice(e.call);cue(e.call==='시작'?'중단 정렬 · 시작':'중단 정렬 · 두 판째',1.1);verdict(e.call,'이제부터 유효격자를 노릴 수 있습니다.');}
   if(e.type==='clinch_break'){cue('근접 대치 · 서로 물러납니다',1);verdict('죽도를 맞대고 대치했습니다.','이 간격에서는 후퇴하거나 퇴격 머리로 변화를 만드세요.');}
+  if(e.type==='tsuba'){cue('코등이 싸움 · ← + W/S 퇴격머리',1.25);verdict('코등이 싸움에 들어갔습니다.','죽도를 맞댄 채 중심을 다툽니다. 왼쪽 화살표와 W 또는 S로 물러나며 퇴격머리를 연결하세요.');}
   if(e.type==='push')cue(e.result==='held'?'상대가 중심을 지켰습니다':e.result==='yield'?'몸받음 · 상대가 물러납니다':'몸받음',.75);
   if(e.type==='stoppage'){voice('중지');cue('중지 · 시작선으로 복귀',1.1);verdict('장외 가능성으로 경기를 중단합니다.','심판이 선수를 시작선으로 되돌립니다.');}
   if(e.type==='hansoku'){const offender=e.side==='player'?'남색':'흰색';cue(`${offender} 경고 △ ${e.point?'· 반칙 2회, 상대 1점':'· 누적 1회'}`,1.5);verdict(`${offender} 장외 경고`,e.point?'경고 2회로 상대에게 한 판이 주어졌습니다.':'두 번째 경고는 상대에게 한 판이 주어집니다.');}
@@ -173,7 +174,7 @@ window.addEventListener('keydown',e=>{
   if(['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)||$('help').open||$('settings-panel').open)return;
   if(keys[e.code]||['KeyQ','KeyW','KeyS','KeyD','KeyA','KeyE','KeyR','Escape','KeyC'].includes(e.code))e.preventDefault();
   if(e.repeat)return;
-  if(e.code==='Escape'){if(match.finished)returnToIntro();else setPaused(!paused);return;}if(e.code==='KeyC'){if(dojo)dojo.view=(dojo.view+1)%4;return;}if(e.code==='KeyE'){match.stance='chudan';updateUI();return;}if(e.code==='KeyR'){match.stance='jodan';updateUI();return;}
+  if(e.code==='Escape'){if(match.finished)returnToIntro();else setPaused(!paused);return;}if(e.code==='KeyC'){if(dojo)dojo.view=(dojo.view+1)%4;return;}if(e.code==='KeyE'){if(started&&match.engageTsuba()){updateUI();return;}match.stance='chudan';updateUI();return;}if(e.code==='KeyR'){match.stance='jodan';updateUI();return;}
   if(!started||paused||match.finished)return;
   if(keys[e.code]){pressedCodes.add(e.code);held.add(keys[e.code]);pressStarted.set(e.code,match.clock);}
   const zone={KeyQ:'tsuki',KeyW:'men',KeyS:'smallMen',KeyD:'kote',KeyA:'do'}[e.code];if(zone)action(zone);

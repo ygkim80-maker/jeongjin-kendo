@@ -21,10 +21,10 @@ export class Match {
   reset({level=2,practice=false,team=false,teamSize=3,ruleSet='quick'}={}) {
     this.level=level; this.practice=practice;this.team=team;this.teamSize=teamSize;this.ruleSet=ruleSet;this.teamScore={player:0,ai:0};this.teamPoints={player:0,ai:0};this.teamResults=[];this.pointSequence=[];this.bout=1;this.representative=false;this.roundTime=ruleSet==='standard'?240:180;this.time=this.roundTime;this.clock=0;this.winTarget=2;
     this.player=this.fighter(-2.65); this.ai=this.fighter(2.65);
-    this.pressure=0; this.opening=0;this.clinchTime=0;this.clinchLimit=2.3;this.forcedRetreat=0;this.stoppage=0;this.pendingPenalty=null; this.aiThink=1.8; this.aiTactic='probe'; this.aiTacticTime=.8; this.lastAiZone=null;this.pointWait=0;this.counterWindow=0;this.aiGuard=0;this.aiEvade=0;this.tsubaFight=false;
+    this.pressure=0; this.opening=0;this.clinchTime=0;this.clinchLimit=2.3;this.forcedRetreat=0;this.stoppage=0;this.pendingPenalty=null; this.aiThink=1.8; this.aiTactic='probe'; this.aiTacticTime=.8; this.lastAiZone=null;this.pointWait=0;this.counterWindow=0;this.aiGuard=0;this.aiEvade=0;this.tsubaFight=false;this.foulCooldown=14+this.random()*10;
     this.finished=false; this.winner=null; this.events=[]; this.stats={attacks:0,blocks:0,valid:0,contacts:0,parries:0};this.stance='chudan';this.ceremony=null;
   }
-  fighter(x) { return {x,home:x,velocity:0,state:'idle',elapsed:0,zone:'men',resolved:false,score:0,points:[],warnings:0,guardTime:0,guardHeld:0,guardStyle:0,semeStyle:0,semeSwitch:0,irimi:false,clinch:false,impact:0,counter:false,startDistance:99,pushHeld:false,pushCooldown:0}; }
+  fighter(x) { return {x,home:x,velocity:0,state:'idle',elapsed:0,zone:'men',resolved:false,score:0,points:[],warnings:0,guardTime:0,guardHeld:0,guardStyle:0,semeStyle:0,semeSwitch:0,irimi:false,clinch:false,impact:0,counter:false,startDistance:99,pushHeld:false,pushCooldown:0,force:0}; }
   get distance(){ return this.ai.x-this.player.x; }
   get inRange(){return this.distance>=1.25&&this.distance<=2.65;}
   event(type,extra={}){this.events.push({type,...extra});}
@@ -78,6 +78,9 @@ export class Match {
     // 무게 중심이 무너지면 장외가 된다.
     const drive=.18+this.random()*.92;
     const resistance=.44+this.random()*.62;
+    p.force+=.72;
+    // 힘으로 밀어 장외를 만들려는 과도한 몸받음은 드물게 오히려 반칙.
+    if(drive>1.02&&this.random()<.68){this.issuePenalty('player','부당한 힘');return true;}
     if(drive<=resistance){this.event('push',{result:'held'});return true;}
     const next=a.x+drive*.78;
     if(next<=5.4){a.x=next;this.event('push',{result:'yield'});return true;}
@@ -94,6 +97,16 @@ export class Match {
     }
     this.pendingPenalty={side,count:offender.warnings||2,reason,point};
     this.stoppage=1.12;this.event('stoppage',{reason});
+  }
+  considerRoughPlay(dt){
+    if(this.practice||this.foulCooldown>0||this.stoppage>0||this.pointWait>0)return;
+    const candidates=[['player',this.player],['ai',this.ai]];
+    for(const [side,f] of candidates){
+      if(f.force>1.05&&this.random()<dt*.10){
+        f.force=.18;this.foulCooldown=18+this.random()*16;
+        this.issuePenalty(side,'과도한 힘');return;
+      }
+    }
   }
   advanceStrike(f,isPlayer,dt){
     const wind=strikeWind(f.zone,isPlayer,this.level);
@@ -161,9 +174,9 @@ export class Match {
     if(!this.practice){this.time=Math.max(0,this.time-dt);if(this.time<=0){if(this.team){if(this.representative){this.time=this.roundTime;}else{const side=this.player.score===this.ai.score?null:this.player.score>this.ai.score?'player':'ai';this.completeTeamBout(side);if(!this.finished)this.resetExchange();}return;}this.end();return;}}
     this.opening=Math.max(0,this.opening-dt);
     this.counterWindow=Math.max(0,this.counterWindow-dt);
-    this.aiGuard=Math.max(0,this.aiGuard-dt);this.aiEvade=Math.max(0,this.aiEvade-dt);
+    this.aiGuard=Math.max(0,this.aiGuard-dt);this.aiEvade=Math.max(0,this.aiEvade-dt);this.foulCooldown=Math.max(0,this.foulCooldown-dt);
     const p=this.player,a=this.ai;
-    for(const f of [p,a]){f.elapsed+=dt;f.velocity=0;}
+    for(const f of [p,a]){f.elapsed+=dt;f.velocity=0;f.force=Math.max(0,f.force-dt*.12);}
     p.pushCooldown=Math.max(0,p.pushCooldown-dt);
     if(this.stoppage>0){
       this.stoppage-=dt;p.state='idle';a.state='idle';p.clinch=a.clinch=false;
@@ -204,17 +217,21 @@ export class Match {
       const drive=Math.sin(this.clock*10)*.16;
       p.state=a.state='clinch';p.clinch=a.clinch=true;
       p.velocity=drive;a.velocity=-drive;
+      p.force+=dt*.16;a.force+=dt*.16;
       p.x=clamp(p.x+drive*dt,-5.4,a.x-1.05);a.x=clamp(a.x-drive*dt,p.x+1.05,5.4);
       this.clinchTime+=dt;
       // 0.45s at the existing two-step pace is roughly three short steps
       // for each fighter, without throwing them back to opposite walls.
       if(this.clinchTime>=1.25){this.tsubaFight=false;this.forcedRetreat=.45;this.clinchTime=0;this.event('tsuba_break');}
+      this.considerRoughPlay(dt);
       return;
     }
     if(p.state==='seme'&&this.distance<=3.15&&a.state!=='attack'){
       this.pressure=clamp(this.pressure+dt*(p.irimi?.96:.58),0,1);
       if(this.pressure>=1){this.opening=1.7;this.pressure=.18;this.event('opening');}
     }else this.pressure=Math.max(0,this.pressure-dt*.12);
+    if(p.state==='seme'&&this.distance<1.55)p.force+=dt*.08;
+    if(a.state==='attack'&&this.distance<1.55)a.force+=dt*.05;
     const clinched=this.distance<1.32&&p.state!=='attack'&&a.state!=='attack';
     p.clinch=a.clinch=clinched;
     if(clinched){this.clinchTime+=dt;if(this.clinchTime>=this.clinchLimit){this.forcedRetreat=.58;this.clinchTime=0;this.clinchLimit=1.9+this.random()*.8;this.event('clinch_break');}}else this.clinchTime=0;
@@ -237,6 +254,7 @@ export class Match {
     for(const [f,other,isPlayer] of [[p,a,true],[a,p,false]]){
       const wind=strikeWind(f.zone,isPlayer,this.level);
       if(f.state==='attack'){
+        if(f.elapsed<=dt*1.1&&this.distance<1.62)f.force+=.22;
         this.advanceStrike(f,isPlayer,dt);
         if(!f.resolved&&f.elapsed>=wind){f.resolved=true;this.resolve(f,other,isPlayer);if(this.pointWait>0)return;}
         if(f.elapsed>wind+TIMING.recovery){f.state='idle';f.elapsed=0;if(!isPlayer)this.aiThink=(DIFFICULTY[this.level]?.attackDelay ?? 1)+this.random()*.8;}
@@ -259,6 +277,7 @@ export class Match {
       if(!isPlayer)this.counterWindow=zone==='men'?this.opening:0;
       this.event('block',{perfect:other.guardTime<.32,zone,counterReady:zone==='men'});return;
     }
+    this.considerRoughPlay(dt);
     if(defending){
       // 완전히 맞지 않은 방어라도 죽도가 닿아 궤적을 흘릴 수 있다.
       // 즉, 머리 방어 중 허리를 맞아도 항상 즉시 유효타가 나진 않는다.

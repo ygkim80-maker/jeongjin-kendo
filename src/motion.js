@@ -1,0 +1,52 @@
+import {Vector3} from 'three';
+import {clamp,TIMING} from './engine.js';
+import {attackFeet} from './footwork.js';
+const v=(x,y,z)=>new Vector3(x,y,z);
+const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+const mix=(a,b,t)=>a+(b-a)*t;
+function bezier(a,b,c,d,t){const u=1-t;return a.clone().multiplyScalar(u*u*u).addScaledVector(b,3*u*u*t).addScaledVector(c,3*u*t*t).addScaledVector(d,t*t*t);}
+/** Shared continuous action timeline. Blade direction follows an arc, never a lerped tip. */
+export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
+  const restDir=restTip.clone().sub(restHand).normalize();
+  const prepDuration=Math.max(.035,wind-.11),swingDuration=wind-prepDuration,followDuration=.075;
+  const chamber=v(0,1.98,.08),hit=v(0,1.70,.68);
+  let theta0=-.58,theta1=1.37,yaw0=0,yaw1=0;
+  // Men is a full-body entry: hands rise above the head, then the shinai extends down through the target.
+  if(zone==='men'){chamber.set(0,2.42,.05);hit.set(0,2.20,.84);theta0=-.72;theta1=1.76;}
+  if(zone==='kote'){chamber.set(.015,1.76,.21);hit.set(.035,1.27,.7);theta0=-.19;theta1=1.6;}
+  // Small men keeps the same flying entry, but the shinai rises only briefly instead of a full overhead chamber.
+  if(zone==='smallMen'){chamber.set(0,1.94,.26);hit.set(0,1.80,.84);theta0=-.16;theta1=1.39;}
+  if(zone==='hikiMen'){chamber.set(0,1.85,.19);hit.set(0,1.68,.66);theta0=-.48;theta1=1.34;}
+  if(zone==='do'){chamber.set(-.30,2.18,.12);hit.set(.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
+  // Left/right are fighter-local directions, so they stay stable when the camera changes.
+  if(zone==='hikiDo'){chamber.set(-.30,2.14,.12);hit.set(.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
+  // Reverse do is mirrored so it enters to the fighter's right on screen.
+  if(zone==='gyakuDo'){chamber.set(.30,2.14,.12);hit.set(-.22,1.21,.69);theta0=.28;theta1=1.72;yaw0=.95;yaw1=-.32;}
+  if(zone==='tsuki'){chamber.set(0,1.26,.19);hit.set(0,1.5,.81);theta0=1.12;theta1=1.27;}
+  if(counter){chamber.set(-.30,2.20,.18);hit.set(.23,1.21,.70);theta0=.28;theta1=1.72;yaw0=-.95;yaw1=.32;}
+  const blade=(theta,yaw)=>v(Math.sin(yaw)*Math.sin(theta),Math.cos(theta),Math.cos(yaw)*Math.sin(theta));
+  const chamberDir=blade(theta0,yaw0),contactDir=blade(theta1,yaw1);
+  const waist=['do','hikiDo','gyakuDo'].includes(zone),cutSign=zone==='gyakuDo'?-1:1;
+  const follow=hit.clone().add(v(waist?.05*cutSign:0,zone==='tsuki'?-.025:-.10,.035));
+  const followDir=blade(theta1+(zone==='tsuki'?.025:.20),yaw1+(waist?.2*cutSign:0));
+  let hand,dir;
+  if(e<prepDuration){const t=ease(e/prepDuration);hand=(counter?v(-.08,1.74,.4):restHand.clone()).lerp(chamber,t);dir=(counter?v(.8,.44,.23).normalize():restDir.clone()).lerp(chamberDir,t).normalize();}
+  else if(e<=wind){
+    const t=clamp((e-prepDuration)/swingDuration,0,1);
+    const c1=chamber.clone().add(v((zone==='do'||counter)?-.12:0,.12,.24)),c2=hit.clone().add(v(0,.17,-.09));
+    hand=bezier(chamber,c1,c2,hit,t);
+    // Accelerate the wrists through the contact instead of stopping at its key pose.
+    const angular=Math.pow(t,1.55);dir=blade(mix(theta0,theta1,angular),mix(yaw0,yaw1,t));
+  }else if(e<wind+followDuration){const t=(e-wind)/followDuration;hand=hit.clone().lerp(follow,1-(1-t)**2);dir=contactDir.clone().lerp(followDir,1-(1-t)**2).normalize();}
+  else{const t=ease((e-wind-followDuration)/(TIMING.recovery-followDuration));hand=bezier(follow,follow.clone().add(v(0,-.025,-.08)),restHand.clone().add(v(0,-.015,.09)),restHand,t);dir=followDir.clone().lerp(restDir,t).normalize();}
+  const drive=ease((e-(wind-.135))/.135),release=ease((e-wind-.09)/(TIMING.recovery-.09));
+  const prep=ease(e/prepDuration)*(1-drive),weight=drive*(1-release);
+  const flight=clamp((e-(wind-.135))/.135,0,1);
+  const feet=attackFeet(e,wind,zone);
+  if(counter){feet.frontOffset*=.85;feet.backOffset*=.85;}
+  const waistLunge=counter?.82:zone==='men'?1.12:zone==='smallMen'?.78:zone==='kote'?.66:zone==='hikiDo'?-.30:zone==='gyakuDo'?.70:zone==='do'?.56:.48;
+  const entryLean=zone==='men'?.20:zone==='smallMen'?.15:zone==='kote'?.12:zone==='hikiMen'?.095:zone==='hikiDo'?-.055:.065;
+  return {hand,tip:hand.clone().addScaledVector(dir,1.13),lean:-.018*prep+entryLean*weight,lunge:waistLunge*weight,
+    twist:(waist?.22*cutSign:.055)*weight-(waist?.08*cutSign:.018)*prep,
+    sink:-.025*prep-.015*weight,frontLift:Math.sin(flight*Math.PI)*(zone==='hikiDo'?.025:zone==='men'?.15:zone==='smallMen'?.11:.075),...feet};
+}

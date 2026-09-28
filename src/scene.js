@@ -8,6 +8,18 @@ const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 const mix=(a,b,t)=>a+(b-a)*t;
 function mat(color,roughness=.8,metalness=0){return new T.MeshStandardMaterial({color,roughness,metalness});}
 function toonMat(color,roughness=.62,metalness=.05){return new T.MeshStandardMaterial({color,roughness,metalness});}
+function wovenMat(color,seed=1){
+  const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  x.fillStyle=color;x.fillRect(0,0,256,256);
+  // A deliberately fine weave: it reads as textile at close range without
+  // becoming a graphic pattern when the camera pulls back during a match.
+  let n=seed*7919;const rand=()=>{n=(n*16807)%2147483647;return(n-1)/2147483646;};
+  for(let i=-256;i<512;i+=5){x.strokeStyle=`rgba(240,242,235,${.025+rand()*.035})`;x.lineWidth=1;x.beginPath();x.moveTo(i,0);x.lineTo(i+256,256);x.stroke();}
+  for(let i=0;i<256;i+=4){x.strokeStyle=`rgba(0,0,0,${.035+rand()*.045})`;x.lineWidth=1;x.beginPath();x.moveTo(0,i);x.lineTo(256,i);x.stroke();}
+  const map=new T.CanvasTexture(c);map.wrapS=map.wrapT=T.RepeatWrapping;map.repeat.set(7,7);map.colorSpace=T.SRGBColorSpace;
+  return new T.MeshStandardMaterial({color:'#ffffff',map,bumpMap:map,bumpScale:.012,roughness:.83,metalness:0});
+}
+function lacquerMat(color){return new T.MeshPhysicalMaterial({color,roughness:.24,metalness:.13,clearcoat:.62,clearcoatRoughness:.2});}
 function mesh(geo,material,parent,x=0,y=0,z=0){const m=new T.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function box(parent,w,h,d,m,x=0,y=0,z=0){return mesh(new T.BoxGeometry(w,h,d),m,parent,x,y,z);}
 function ellipsoid(parent,r,s,m,x,y,z){const o=mesh(new T.SphereGeometry(r,24,16),m,parent,x,y,z);o.scale.set(...s);return o;}
@@ -44,8 +56,10 @@ function woodTexture(){
 export class Dojo {
   constructor(canvas){
     this.canvas=canvas;this.renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFShadowMap;
-    this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.02;
+    // Sharper desktop output while retaining a conservative pixel budget on
+    // phones: this is visual fidelity, not a change to simulation timing.
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(pointer:coarse)').matches?1.35:2));this.renderer.outputColorSpace=T.SRGBColorSpace;this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=T.PCFSoftShadowMap;
+    this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.06;
     this.scene=new T.Scene();this.scene.background=new T.Color('#647776');this.scene.fog=new T.Fog('#647776',17,37);
     this.camera=new T.PerspectiveCamera(36,1,.1,65);this.camera.position.set(6.7,3.4,8.6);this.target=V(0,1,0);this.view=0;this.shake=0;this.hitTime=0;
     this.highlightState=null;this.scene.add(new T.HemisphereLight('#dce7df','#54402b',2.1));
@@ -155,9 +169,10 @@ class Fighter {
     // silhouette together, rather than making the helmet look oversized.
     // 선수는 주심보다 약 15cm만 크게: 기준 체형의 1.1배 세로 비율.
     this.root.scale.set(1.06,1.276,1.06);
-    // 천은 부드럽게, 호구와 죽도 금속은 윤기 있게 처리해 검은 외곽선 없이도
-    // 실루엣과 소재가 분명하게 읽히도록 한다.
-    const blue=side==='blue';this.fabric=toonMat(blue?'#172b49':'#f0eee3',.78);this.fold=toonMat(blue?'#15243c':'#d5d9d4',.84);this.armor=toonMat('#14212b',.28,.18);this.trim=toonMat('#53636a',.38,.22);this.skin=toonMat('#c5a284',.7);this.tape=toonMat(blue?'#c94140':'#ebe6cd',.58);this.metal=toonMat('#b5bcad',.26,.8);
+    // Material separation is what makes the existing animated geometry read
+    // more like real equipment: woven cloth, matte leather, lacquer and steel
+    // now respond differently to the same dojo light.
+    const blue=side==='blue';this.fabric=wovenMat(blue?'#172b49':'#ece9dd',blue?7:13);this.fold=wovenMat(blue?'#13243d':'#d0d4cf',blue?17:23);this.armor=lacquerMat('#111b23');this.trim=lacquerMat('#4a5b61');this.skin=toonMat('#c5a284',.7);this.tape=toonMat(blue?'#c94140':'#ebe6cd',.58);this.metal=new T.MeshPhysicalMaterial({color:'#c1c9c3',roughness:.2,metalness:.88,clearcoat:.32});
     this.body=new T.Group();this.root.add(this.body);
     this.pelvis=new T.Group();this.body.add(this.pelvis);this.pelvis.position.y=1.04;
     this.trousers=[];
@@ -175,7 +190,7 @@ class Fighter {
     // A helmet shell with a dark inset, steel grille, throat flap and side wings.
     this.head=new T.Group();this.head.position.set(0,1.895,.015);this.head.scale.setScalar(.77);this.body.add(this.head);
     mesh(new T.CylinderGeometry(.078,.09,.19,16),this.fabric,this.body,0,1.68,0);
-    const helmetCloth=toonMat('#182939',.7);
+    const helmetCloth=wovenMat('#182939',31);
     ellipsoid(this.head,.255,[.85,1.09,.94],helmetCloth,0,0,0);
     ellipsoid(this.head,.218,[.83,1,.55],this.armor,0,-.005,.14);
     const rim=curve(this.head,[V(-.158,-.17,.23),V(-.185,.01,.23),V(-.125,.185,.21),V(0,.218,.21),V(.125,.185,.21),V(.185,.01,.23),V(.158,-.17,.23)],.014,this.trim);

@@ -27,7 +27,9 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   // hiki-do / kaeshi-do visibly travel left → right, gyaku-do right → left.
   // Waist cuts first lift just above the helmet and travel through a compact
   // circular shoulder turn; they should never read as a vertical chop.
-  if(zone==='do'){chamber.set(-.34,2.30,.10);hit.set(.22,1.21,.69);theta0=.14;theta1=1.72;yaw0=-1.02;yaw1=.32;}
+  // The plain A-button do uses the same visible left → right cut as hiki-do;
+  // only its footwork stays forward instead of retreating.
+  if(zone==='do'){chamber.set(.42,2.27,.10);hit.set(-.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
   if(zone==='hikiDo'){chamber.set(.42,2.27,.10);hit.set(-.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=1.24;yaw1=-.42;}
   if(zone==='gyakuDo'){chamber.set(-.42,2.27,.10);hit.set(.32,1.21,.69);theta0=.14;theta1=1.72;yaw0=-1.24;yaw1=.42;}
   if(zone==='tsuki'){chamber.set(0,1.26,.19);hit.set(0,1.5,.81);theta0=1.12;theta1=1.27;}

@@ -37,7 +37,10 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   // only its footwork stays forward instead of retreating.
   if(zone==='do'){chamber.set(-.44,1.98,.13);hit.set(.35,1.20,.73);theta0=1.34;theta1=1.68;yaw0=-2.78;yaw1=.50;}
   if(zone==='hikiDo'){chamber.set(-.44,1.98,.13);hit.set(.35,1.20,.70);theta0=1.34;theta1=1.68;yaw0=-2.78;yaw1=.50;}
-  if(zone==='gyakuDo'){chamber.set(.44,1.98,.13);hit.set(-.35,1.20,.73);theta0=1.34;theta1=1.68;yaw0=2.78;yaw1=-.50;}
+  // Gyaku-do must read as the true mirror of hiki/kaeshi-do.  Give it a
+  // wider opposite-side load and let the tip cross the centreline earlier,
+  // instead of hiding the reversal in the final few frames.
+  if(zone==='gyakuDo'){chamber.set(.54,1.98,.13);hit.set(-.46,1.20,.73);theta0=1.34;theta1=1.68;yaw0=2.78;yaw1=-.58;}
   // Thrust is a straight neck-line action, not a raised empty-air poke.  The
   // contact key targets the defender's tare/men gap at issoku-itto distance.
   if(zone==='tsuki'){chamber.set(0,1.40,.25);hit.set(0,1.42,.42);theta0=1.32;theta1=1.36;}
@@ -65,9 +68,10 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
     if(waistArc){
       // Route the tip around the crown/shoulder before it reaches the torso.
       // Two angular legs produce a visible rotation instead of a diagonal chop.
-      const turn=cutSign<0?-1:1,midTheta=1.42,midYaw=1.15*turn;
-      if(t<.46){const q=ease(t/.46);dir=blade(mix(theta0,midTheta,q),mix(yaw0,midYaw,q));}
-      else{const q=ease((t-.46)/.54);dir=blade(mix(midTheta,theta1,q),mix(midYaw,yaw1,q));}
+      const turn=cutSign<0?-1:1,midTheta=1.42;
+      const split=zone==='gyakuDo'?.36:.46,midYaw=zone==='gyakuDo'?0:1.15*turn;
+      if(t<split){const q=ease(t/split);dir=blade(mix(theta0,midTheta,q),mix(yaw0,midYaw,q));}
+      else{const q=ease((t-split)/(1-split));dir=blade(mix(midTheta,theta1,q),mix(midYaw,yaw1,q));}
     }else dir=blade(mix(theta0,theta1,angular),mix(yaw0,yaw1,t));
   }else if(e<wind+followDuration){const t=(e-wind)/followDuration;hand=hit.clone().lerp(follow,1-(1-t)**2);dir=contactDir.clone().lerp(followDir,1-(1-t)**2).normalize();}
   else{const t=ease((e-wind-followDuration)/(TIMING.recovery-followDuration));hand=bezier(follow,follow.clone().add(v(0,-.025,-.08)),restHand.clone().add(v(0,-.015,.09)),restHand,t);dir=followDir.clone().lerp(restDir,t).normalize();}
@@ -79,6 +83,6 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   const waistLunge=counter?.82:zone==='men'?1.16:zone==='smallMen'?.78:zone==='kote'?.73:zone==='hikiDo'?-.30:zone==='gyakuDo'?.70:zone==='do'?.56:.48;
   const entryLean=zone==='men'?.14:zone==='smallMen'?.15:zone==='kote'?.09:zone==='hikiMen'?.095:zone==='hikiDo'?-.055:.065;
   return {hand,tip:hand.clone().addScaledVector(dir,1.13),lean:-.018*prep+entryLean*weight,lunge:waistLunge*weight,
-    twist:(waist?.43*cutSign:.055)*weight-(waist?.20*cutSign:.018)*prep,
+    twist:(waist?(zone==='gyakuDo'?.54:.43)*cutSign:.055)*weight-(waist?.20*cutSign:.018)*prep,
     sink:-.025*prep-.015*weight,frontLift:Math.sin(flight*Math.PI)*(zone==='hikiDo'?.025:zone==='men'?.115:zone==='smallMen'?.11:.075),...feet};
 }

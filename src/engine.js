@@ -1,7 +1,10 @@
 import {attackTravel} from './footwork.js';
 export const NAMES = {men:'큰머리',smallMen:'머리',hikiMen:'퇴격머리',kote:'손목',do:'허리',tsuki:'찌름',hikiDo:'퇴격허리',gyakuDo:'역허리'};
 export const TIMING={playerWind:.19,recovery:.29,aiWind:level=>clamp(.82-level*.055,.24,.76)};
-export const strikeWind=(zone,isPlayer,level)=>isPlayer?(zone==='men'?.14:zone==='smallMen'?.10:TIMING.playerWind):TIMING.aiWind(level);
+// Big men needs a readable overhead chamber before the final fast cut.  Small
+// men remains the compact quick option, so the two techniques no longer look
+// like the same strike at nearly identical speed.
+export const strikeWind=(zone,isPlayer,level)=>isPlayer?(zone==='men'?.24:zone==='smallMen'?.10:['do','hikiDo','gyakuDo'].includes(zone)?.25:TIMING.playerWind):TIMING.aiWind(level);
 export const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const attacks = ['men','smallMen','hikiMen','kote','do','tsuki','hikiDo','gyakuDo'];
 // The scoring window follows the physical end of the animated shinai.  This

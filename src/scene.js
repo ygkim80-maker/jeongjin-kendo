@@ -66,7 +66,7 @@ export class Dojo {
     const sun=new T.DirectionalLight('#ffe2ae',4.1);sun.position.set(-5,9,-5);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-10,right:10,top:10,bottom:-10,near:.5,far:25});sun.shadow.normalBias=.025;sun.shadow.bias=-.0003;sun.shadow.radius=3;this.scene.add(sun);
     const fill=new T.DirectionalLight('#badde9',1.0);fill.position.set(4,4,7);this.scene.add(fill);
     this.buildDojo();batchStatic(this.scene);this.player=new Fighter(this.scene,'blue');this.ai=new Fighter(this.scene,'white');this.buildReferees();
-    this.effects=[];this.makeDust();
+    this.effects=[];this.pendingImpacts=[];this.makeDust();
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas.parentElement);this.resize();
   }
   resize(){const r=this.canvas.getBoundingClientRect();this.width=r.width;this.height=r.height;this.renderer.setSize(r.width,r.height,false);this.camera.aspect=r.width/r.height;this.camera.updateProjectionMatrix();}
@@ -127,12 +127,18 @@ export class Dojo {
     this.dust=new T.Points(g,new T.PointsMaterial({color:'#efddb0',size:.018,transparent:true,opacity:.35,depthWrite:false}));this.scene.add(this.dust);
   }
   impact(player,zone){
+    // The rules engine confirms the point just before the rendered wrists have
+    // fully reached the contact key.  Queue the particles for two visual
+    // frames so the target is actually struck before the hit flash appears.
+    this.pendingImpacts.push({player,zone,delay:.034});
+  }
+  spawnImpact(player,zone){
     this.shake=.055;this.hitTime=.11;
     const pos=(player?this.ai:this.player).root.position.clone();pos.y=zone==='men'?1.99:zone==='kote'?1.3:1.15;
     for(let i=0;i<16;i++){const crimson=i%4===0?'#a51f29':i%4===1?'#d53c3f':i%2?'#eed7a4':'#fbf5d8';const m=mesh(new T.SphereGeometry(i%4===0?.022:.012,5,4),new T.MeshBasicMaterial({color:crimson,transparent:true}),this.scene,...pos.toArray());this.effects.push({mesh:m,v:V((Math.random()-.5)*2,Math.random()*1.5,(Math.random()-.5)*2),life:i%4===0?.62:.35});}
   }
   highlight(point){
-    if(!point)return;this.highlightState={...point,elapsed:0,life:3.3};this.impact(point.player,point.zone);
+    if(!point)return;this.highlightState={...point,elapsed:0,life:3.3,impactPlayed:false};
   }
   render(match,dt,active=true){
     let playerState=match.player,aiState=match.ai,replayFocus=null;
@@ -144,10 +150,12 @@ export class Dojo {
       defender.x=h.opponentX??defender.x;defender.state='idle';defender.velocity=0;
       if(h.player){playerState=actor;aiState=defender;}else{aiState=actor;playerState=defender;}
       replayFocus=V(defender.x,h.zone==='men'?1.85:h.zone==='kote'?1.28:1.12,0);
+      if(!h.impactPlayed&&h.elapsed>=wind){h.impactPlayed=true;this.pendingImpacts.push({player:h.player,zone:h.zone,delay:0});}
       if(h.life<=0)this.highlightState=null;
     }
     this.player.update(playerState,match.clock,dt,true,match.level,match.pointWait,match.stance);
     this.ai.update(aiState,match.clock,dt,false,match.level,match.pointWait,'chudan');
+    for(let i=this.pendingImpacts.length-1;i>=0;i--){const p=this.pendingImpacts[i];p.delay-=dt;if(p.delay<=0){this.spawnImpact(p.player,p.zone);this.pendingImpacts.splice(i,1);}}
     // Raised flags finish vertically overhead instead of at a diagonal.
     for(const ref of this.referees){const sign=match.pointWait>0?(match.player.state==='hit'?-1:1):0;ref.red.rotation.z=mix(ref.red.rotation.z,sign===1?Math.PI:0,1-Math.exp(-dt*11));ref.white.rotation.z=mix(ref.white.rotation.z,sign===-1?-Math.PI:0,1-Math.exp(-dt*11));}
     const center=(match.player.x+match.ai.x)/2;

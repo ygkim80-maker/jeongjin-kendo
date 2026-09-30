@@ -105,19 +105,60 @@ export class Dojo {
   }
   buildReferees(){
     this.referees=[];
-    const shirt=mat('#e3e5dc'),trousers=mat('#283237'),skin=mat('#c5a78c'),hair=mat('#33332d'),red=mat('#aa4d3b'),white=mat('#eee9d5'),stick=mat('#93754d');
-    for(const [x,z,angle] of [[-3.65,-1.9,.65],[3.65,-1.9,-.65],[0,3.15,Math.PI]]){
-      const root=new T.Group();root.position.set(x,0,z);root.rotation.y=angle;root.scale.set(1.02,1.14,1.02);this.scene.add(root);
-      for(const sign of [-1,1]){const leg=rod(root,.072,trousers);between(leg,V(sign*.1,.91,0),V(sign*.11,.09,0));box(root,.14,.09,.28,trousers,sign*.11,.045,.05);}
-      const torso=mesh(new T.CylinderGeometry(.24,.18,.66,16),shirt,root,0,1.26,0);torso.scale.z=.70;
-      ellipsoid(root,.155,[.84,1.16,.91],skin,0,1.80,0);ellipsoid(root,.157,[.86,.72,.94],hair,0,1.91,-.014);
-      box(root,.035,.38,.018,red,0,1.30,.155);box(root,.31,.048,.22,mat('#c3c9c1'),0,1.51,.02);
-      box(root,.035,.29,.015,trousers,0,1.35,.15);box(root,.3,.055,.21,trousers,0,.94,0);
+    const shirt=mat('#e7e8e1'),trousers=mat('#263036'),red=mat('#aa4d3b'),white=mat('#eee9d5'),stick=mat('#93754d'),belt=mat('#202529'),collar=mat('#c8cdc7');
+    // 두 부심과 주심은 같은 복장을 입되 체격, 얼굴, 머리 모양이 서로
+    // 다르다. 구형 머리+원통 몸통 대신 성인 비율의 목·어깨·허리·관절을 쓴다.
+    const profiles=[
+      {x:-3.65,z:-1.9,angle:.65,build:.94,height:1.12,shoulder:.235,waist:.175,skin:'#c69f82',hair:'#252a29',style:'crop'},
+      {x:3.65,z:-1.9,angle:-.65,build:1.07,height:1.14,shoulder:.265,waist:.205,skin:'#b8896e',hair:'#332d29',style:'part'},
+      {x:0,z:3.15,angle:Math.PI,build:1.01,height:1.16,shoulder:.25,waist:.185,skin:'#c39a7d',hair:'#60605b',style:'silver'}
+    ];
+    for(const p of profiles){
+      const skin=mat(p.skin),hair=mat(p.hair);
+      const root=new T.Group();root.position.set(p.x,0,p.z);root.rotation.y=p.angle;root.scale.set(p.build,p.height,p.build);this.scene.add(root);
+      // Long trouser legs with separate shoes and a narrow pelvis remove the
+      // toy-like single-stick silhouette.
+      for(const sign of [-1,1]){
+        const leg=mesh(new T.CylinderGeometry(.068,.078,.82,14),trousers,root,sign*.105,.50,0);
+        leg.scale.z=.82;box(root,.145,.065,.29,belt,sign*.105,.055,.055);
+      }
+      box(root,.34,.16,.23,trousers,0,.94,0);box(root,.35,.055,.235,belt,0,1.005,0);
+      const torsoPoints=[[p.waist,0],[p.waist+.018,.12],[p.shoulder-.018,.47],[p.shoulder,.56],[p.shoulder-.055,.64]];
+      const torso=mesh(new T.LatheGeometry(torsoPoints.map(q=>new T.Vector2(...q)),24),shirt,root,0,1.00,0);torso.scale.z=.76;
+      // Collar, tie and neck make the white-shirt uniform readable at distance.
+      const neck=rod(root,.072,skin);between(neck,V(0,1.62,0),V(0,1.72,0));
+      box(root,.18,.045,.15,collar,0,1.59,.055);box(root,.035,.34,.018,red,0,1.37,.168);box(root,.045,.10,.02,red,0,1.53,.17);
+      // Smaller, vertically proportioned face with ears and a subtle nose.
+      ellipsoid(root,.137,[.84,1.18,.88],skin,0,1.82,0);
+      ellipsoid(root,.035,[.38,.55,.62],skin,0,1.81,.123);
+      for(const sign of [-1,1])ellipsoid(root,.035,[.42,.70,.34],skin,sign*.12,1.82,0);
+      if(p.style==='crop'){
+        ellipsoid(root,.139,[.88,.47,.92],hair,0,1.94,-.012);
+        box(root,.028,.12,.13,hair,-.105,1.90,-.015);
+      }else if(p.style==='part'){
+        ellipsoid(root,.141,[.89,.43,.94],hair,0,1.945,-.012);
+        ellipsoid(root,.075,[.82,.36,.60],hair,-.065,1.925,.075);
+        box(root,.018,.12,.11,hair,.108,1.89,-.015);
+      }else{
+        // 주심은 짧은 회색 옆가르마와 조금 더 각진 인상.
+        ellipsoid(root,.139,[.88,.40,.92],hair,0,1.945,-.018);
+        ellipsoid(root,.072,[.92,.31,.58],hair,.062,1.925,.075);
+        box(root,.022,.105,.105,hair,-.108,1.89,-.01);
+      }
       // 관중 화면에서는 세 심판 모두 좌백·우홍으로 읽힌다. 주심과 마주 보는
       // 양쪽 부심은 그 결과를 맞추기 위해 주심과 반대 손에 각 색을 든다.
       const flags={};
-      const redSign=Math.abs(x)<.1?-1:1;
-      for(const [name,sign,color] of [['red',redSign,red],['white',-redSign,white]]){const arm=new T.Group();arm.position.set(sign*.24,1.45,0);root.add(arm);const sleeve=rod(arm,.06,shirt);between(sleeve,V(0,0,0),V(sign*.025,-.36,0));const forearm=rod(arm,.043,skin);between(forearm,V(sign*.025,-.35,0),V(sign*.04,-.59,.04));const pole=rod(arm,.009,stick);between(pole,V(sign*.04,-.58,.04),V(sign*.07,-.98,.04));box(arm,.23,.25,.008,color,sign*.07+.1,-.84,.04);flags[name]=arm;}
+      const redSign=Math.abs(p.x)<.1?-1:1;
+      for(const [name,sign,color] of [['red',redSign,red],['white',-redSign,white]]){
+        const arm=new T.Group();arm.position.set(sign*(p.shoulder-.015),1.50,0);root.add(arm);
+        ellipsoid(arm,.074,[1,.88,.82],shirt,0,0,0);
+        const sleeve=rod(arm,.058,shirt);between(sleeve,V(0,-.02,0),V(sign*.035,-.29,.008));
+        ellipsoid(arm,.052,[.88,.90,.82],skin,sign*.035,-.31,.008);
+        const forearm=rod(arm,.042,skin);between(forearm,V(sign*.035,-.32,.008),V(sign*.055,-.57,.045));
+        ellipsoid(arm,.046,[.86,1.05,.82],skin,sign*.055,-.59,.045);
+        const pole=rod(arm,.009,stick);between(pole,V(sign*.055,-.58,.045),V(sign*.075,-.99,.045));
+        box(arm,.23,.25,.008,color,sign*.075+.1,-.85,.045);flags[name]=arm;
+      }
       batchStatic(root);this.referees.push(flags);
     }
   }

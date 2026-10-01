@@ -53,6 +53,17 @@ function woodTexture(){
   x.fillStyle='#594635';x.fillRect(0,0,2,1024);x.fillRect(0,0,256,2);
   const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(26,3);tex.colorSpace=T.SRGBColorSpace;return tex;
 }
+function tareNameTexture(name){
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=512;
+  const ctx=canvas.getContext('2d');
+  const letters=Array.from(String(name||'정진').trim()).slice(-4);
+  ctx.fillStyle='#f4f1e8';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=`bold ${letters.length>3?93:112}px "Malgun Gothic", "Noto Sans KR", sans-serif`;
+  const step=letters.length>3?104:128,start=256-(letters.length-1)*step/2;
+  letters.forEach((letter,i)=>ctx.fillText(letter,128,start+i*step));
+  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;
+  return texture;
+}
 export class Dojo {
   constructor(canvas){
     this.canvas=canvas;this.renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -174,6 +185,7 @@ export class Dojo {
       batchStatic(root);this.referees.push(flags);
     }
   }
+  setNames(player,opponent){this.player.setName(player);this.ai.setName(opponent);}
   makeDust(){
     const positions=[];for(let i=0;i<110;i++)positions.push((Math.random()-.5)*18,Math.random()*5,(Math.random()-.5)*12);
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));
@@ -247,7 +259,11 @@ class Fighter {
     // Slim crossed do-himo on the back make the torso read as clothing and armor.
     for(const sign of [-1,1])curve(this.body,[V(sign*.19,1.53,-.06),V(sign*.1,1.34,-.18),V(-sign*.18,1.15,-.13)],.014,this.trim);
     for(let i=-2;i<=2;i++){const panel=box(this.body,.092,.29,.045,this.armor,i*.096,1.005,.16);panel.rotation.x=-.1;for(const yy of [.91,.95,.99,1.03])box(this.body,.079,.005,.006,this.trim,i*.096,yy,.19);}
-    box(this.body,.12,.21,.012,this.tape,0,1.0,.202);
+    // The tare carries the competitor's name in white on a black panel.
+    // Red/white identity stays on the men ribbon, never on this name space.
+    box(this.body,.155,.23,.012,this.armor,0,1.0,.204);
+    this.nameMaterial=new T.MeshBasicMaterial({map:tareNameTexture(blue?'수련자':'맞수'),transparent:true,depthWrite:false,side:T.DoubleSide});
+    mesh(new T.PlaneGeometry(.125,.215),this.nameMaterial,this.body,0,1.0,.214);
     // A helmet shell with a dark inset, steel grille, throat flap and side wings.
     this.head=new T.Group();this.head.position.set(0,1.895,.015);this.head.scale.setScalar(.77);this.body.add(this.head);
     mesh(new T.CylinderGeometry(.078,.09,.19,16),this.fabric,this.body,0,1.68,0);
@@ -285,6 +301,12 @@ class Fighter {
     this.shinai.scale.y=1.1;
     batchStatic(this.head,new Set([this.ribbon]));batchStatic(this.shinai);
     batchStatic(this.body,new Set(this.arms.flatMap(a=>[a.upper,a.lower,a.kote])));
+  }
+  setName(name){
+    const old=this.nameMaterial.map;
+    this.nameMaterial.map=tareNameTexture(name);
+    this.nameMaterial.needsUpdate=true;
+    old?.dispose();
   }
   update(f,time,dt,player,level,pointWait,stance){
     this.root.position.x=f.x;this.root.rotation.y=player?Math.PI/2:-Math.PI/2;

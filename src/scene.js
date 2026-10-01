@@ -105,13 +105,13 @@ export class Dojo {
   }
   buildReferees(){
     this.referees=[];
-    const shirt=mat('#e7e8e1'),trousers=mat('#263036'),red=mat('#aa4d3b'),white=mat('#eee9d5'),stick=mat('#93754d'),belt=mat('#202529'),collar=mat('#c8cdc7');
+    const shirt=mat('#ecece7'),shirtShade=mat('#d9ddd8'),trousers=mat('#263036'),red=mat('#aa4d3b'),white=mat('#eee9d5'),stick=mat('#93754d'),belt=mat('#202529'),collar=mat('#c8cdc7'),button=mat('#8f9693');
     // 두 부심과 주심은 같은 복장을 입되 체격, 얼굴, 머리 모양이 서로
     // 다르다. 구형 머리+원통 몸통 대신 성인 비율의 목·어깨·허리·관절을 쓴다.
     const profiles=[
-      {x:-3.65,z:-1.9,angle:.65,build:.89,height:1.15,shoulder:.255,waist:.165,stance:.095,skin:'#c69f82',hair:'#202725',style:'crop'},
-      {x:3.65,z:-1.9,angle:-.65,build:1.12,height:1.11,shoulder:.305,waist:.215,stance:.14,skin:'#b8896e',hair:'#302923',style:'part'},
-      {x:0,z:3.15,angle:Math.PI,build:1.06,height:1.18,shoulder:.295,waist:.19,stance:.13,skin:'#c39a7d',hair:'#777873',style:'balding'}
+      {x:-3.65,z:-1.9,angle:.65,build:.96,height:1.13,shoulder:.238,waist:.172,stance:.105,skin:'#c69f82',hair:'#202725',style:'crop'},
+      {x:3.65,z:-1.9,angle:-.65,build:1.03,height:1.10,shoulder:.252,waist:.188,stance:.12,skin:'#b8896e',hair:'#302923',style:'part'},
+      {x:0,z:3.15,angle:Math.PI,build:1.00,height:1.16,shoulder:.247,waist:.18,stance:.115,skin:'#c39a7d',hair:'#555b59',style:'swept'}
     ];
     for(const p of profiles){
       const skin=mat(p.skin),hair=mat(p.hair);
@@ -126,11 +126,16 @@ export class Dojo {
         box(root,.15,.062,.31,belt,ankle.x,.045,.105);
       }
       box(root,p.stance*2+.19,.17,.25,trousers,0,.96,0);box(root,p.stance*2+.20,.052,.25,belt,0,1.025,0);
-      const torsoPoints=[[p.waist,0],[p.waist+.018,.12],[p.shoulder-.018,.47],[p.shoulder,.56],[p.shoulder-.055,.64]];
+      const torsoPoints=[[p.waist,0],[p.waist+.008,.12],[p.waist+.025,.31],[p.shoulder-.014,.49],[p.shoulder,.555],[p.shoulder-.052,.64]];
       const torso=mesh(new T.LatheGeometry(torsoPoints.map(q=>new T.Vector2(...q)),24),shirt,root,0,1.00,0);torso.scale.z=.76;
       // Collar, tie and neck make the white-shirt uniform readable at distance.
       const neck=rod(root,.066,skin);between(neck,V(0,1.62,0),V(0,1.735,0));
-      box(root,.18,.045,.15,collar,0,1.59,.055);box(root,.035,.34,.018,red,0,1.37,.168);box(root,.045,.10,.02,red,0,1.53,.17);
+      box(root,.165,.038,.14,collar,0,1.59,.055);box(root,.031,.30,.014,red,0,1.37,.166);box(root,.041,.09,.016,red,0,1.52,.168);
+      // A narrow placket, buttons and shoulder seams make the shirt read as
+      // tailored fabric rather than a single toy-like cone.
+      box(root,.012,.47,.009,shirtShade,0,1.31,.174);
+      for(const y of [1.18,1.29,1.40,1.51])ellipsoid(root,.010,[.7,.7,.38],button,0,y,.181);
+      for(const sign of [-1,1]){const seam=box(root,.105,.012,.012,shirtShade,sign*(p.shoulder-.065),1.555,.08);seam.rotation.z=sign*.18;}
       // Smaller, vertically proportioned face with ears and a subtle nose.
       ellipsoid(root,.118,[.82,1.25,.88],skin,0,1.84,0);
       ellipsoid(root,.030,[.36,.56,.62],skin,0,1.83,.108);
@@ -145,12 +150,11 @@ export class Dojo {
         ellipsoid(root,.070,[.95,.42,.62],hair,-.055,1.938,.073);
         box(root,.018,.105,.105,hair,.098,1.91,-.015);
       }else{
-        // 주심: 정수리는 드러나고 옆·뒤에만 회색 머리가 남은 모습.
-        // 경기 카메라에서 실루엣만 봐도 두 부심과 구분된다.
-        ellipsoid(root,.080,[.52,.52,.46],skin,0,1.945,.005);
-        ellipsoid(root,.055,[.55,1.00,.52],hair,-.086,1.91,-.005);
-        ellipsoid(root,.055,[.55,1.00,.52],hair,.086,1.91,-.005);
-        ellipsoid(root,.092,[.78,.40,.42],hair,0,1.91,-.082);
+        // 주심: 정수리를 완전히 덮는 단정한 중년형 옆가르마. 회색은
+        // 색조로만 구분하고, 탈모처럼 보이는 빈 공간은 만들지 않는다.
+        ellipsoid(root,.121,[.88,.43,.93],hair,0,1.948,-.012);
+        ellipsoid(root,.066,[.90,.34,.54],hair,-.050,1.957,.070);
+        box(root,.016,.095,.103,hair,.096,1.91,-.018);
       }
       // 관중 화면에서는 세 심판 모두 좌백·우홍으로 읽힌다. 주심과 마주 보는
       // 양쪽 부심은 그 결과를 맞추기 위해 주심과 반대 손에 각 색을 든다.

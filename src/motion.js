@@ -32,22 +32,25 @@ export function attackMotion(zone,e,wind,restHand,restTip,counter=false){
   // Waist cuts are not downward men cuts.  The hands load beside and just
   // above the helmet, then cross the torso while the blade turns through a
   // broad horizontal arc at do height.  In the player's facing direction,
-  // plain/hiki/kaeshi-do travel left → right; gyaku-do is the mirror image.
+  // The coordinates below are the fighter's own left/right, not the camera's.
+  // For the blue fighter looking at white: plain/hiki/kaeshi-do travel from
+  // the fighter's left to right, while gyaku-do travels right to left like a
+  // right-handed baseball swing.
   // The plain A-button do uses the same visible left → right cut as hiki-do;
   // only its footwork stays forward instead of retreating.
-  if(zone==='do'){chamber.set(-.44,1.98,.13);hit.set(.35,1.20,.73);theta0=1.34;theta1=1.68;yaw0=-2.78;yaw1=.50;}
-  if(zone==='hikiDo'){chamber.set(-.44,1.98,.13);hit.set(.35,1.20,.70);theta0=1.34;theta1=1.68;yaw0=-2.78;yaw1=.50;}
+  if(zone==='do'){chamber.set(.44,1.98,.13);hit.set(-.35,1.20,.73);theta0=1.34;theta1=1.68;yaw0=2.78;yaw1=-.50;}
+  if(zone==='hikiDo'){chamber.set(.44,1.98,.13);hit.set(-.35,1.20,.70);theta0=1.34;theta1=1.68;yaw0=2.78;yaw1=-.50;}
   // Gyaku-do must read as the true mirror of hiki/kaeshi-do.  Give it a
   // wider opposite-side load and let the tip cross the centreline earlier,
   // instead of hiding the reversal in the final few frames.
-  if(zone==='gyakuDo'){chamber.set(.54,1.98,.13);hit.set(-.46,1.20,.73);theta0=1.34;theta1=1.68;yaw0=2.78;yaw1=-.58;}
+  if(zone==='gyakuDo'){chamber.set(-.54,1.98,.13);hit.set(.46,1.20,.73);theta0=1.34;theta1=1.68;yaw0=-2.78;yaw1=.58;}
   // Thrust is a straight neck-line action, not a raised empty-air poke.  The
   // contact key targets the defender's tare/men gap at issoku-itto distance.
   if(zone==='tsuki'){chamber.set(0,1.40,.25);hit.set(0,1.42,.42);theta0=1.32;theta1=1.36;}
-  if(counter){chamber.set(-.44,1.98,.13);hit.set(.35,1.20,.70);theta0=1.34;theta1=1.68;yaw0=-2.78;yaw1=.50;}
+  if(counter){chamber.set(.44,1.98,.13);hit.set(-.35,1.20,.70);theta0=1.34;theta1=1.68;yaw0=2.78;yaw1=-.50;}
   const blade=(theta,yaw)=>v(Math.sin(yaw)*Math.sin(theta),Math.cos(theta),Math.cos(yaw)*Math.sin(theta));
   const chamberDir=blade(theta0,yaw0),contactDir=blade(theta1,yaw1);
-  const waist=['do','hikiDo','gyakuDo'].includes(zone),cutSign=zone==='gyakuDo'?1:-1;
+  const waist=['do','hikiDo','gyakuDo'].includes(zone),cutSign=zone==='gyakuDo'?-1:1;
   const follow=hit.clone().add(v(waist?.05*cutSign:0,zone==='tsuki'?-.025:-.10,.035));
   const followDir=blade(theta1+(zone==='tsuki'?.025:.20),yaw1+(waist?.2*cutSign:0));
   let hand,dir;

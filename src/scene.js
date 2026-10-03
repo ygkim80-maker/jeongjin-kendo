@@ -2,7 +2,7 @@ import * as T from 'three';
 import {clamp,TIMING,strikeWind} from './engine.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {attackMotion} from './motion.js';
-import {attackTravel} from './footwork.js';
+import {attackPassProgress,attackTravel} from './footwork.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 const mix=(a,b,t)=>a+(b-a)*t;
@@ -46,12 +46,31 @@ function clothGeometry(topR,bottomR,h,segments=36){
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
 function woodTexture(){
-  const c=document.createElement('canvas');c.width=256;c.height=1024;const x=c.getContext('2d');
-  x.fillStyle='#967653';x.fillRect(0,0,256,1024);
+  const c=document.createElement('canvas');c.width=512;c.height=1024;const x=c.getContext('2d');
   let seed=187;const rand=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
-  for(let i=0;i<380;i++){const u=rand()*256;x.strokeStyle=`rgba(${rand()>.4?'46,35,22':'235,202,151'},${rand()*.085})`;x.lineWidth=rand()*1.1;x.beginPath();x.moveTo(u,0);for(let y=0;y<=1024;y+=32)x.lineTo(u+Math.sin(y*.011+i)*rand()*3,y);x.stroke();}
-  x.fillStyle='#594635';x.fillRect(0,0,2,1024);x.fillRect(0,0,256,2);
-  const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(26,3);tex.colorSpace=T.SRGBColorSpace;return tex;
+  // Eight narrow boards per tile, with staggered end joints. The older
+  // texture had one nearly metre-wide plank per repeat and read as stripes.
+  for(let board=0;board<8;board++){
+    const left=board*64,light=Math.floor(rand()*13)-6;
+    x.fillStyle=`rgb(${160+light},${128+light},${88+light})`;
+    x.fillRect(left,0,64,1024);
+    for(let grain=0;grain<95;grain++){
+      const u=left+rand()*64,wave=rand()*6,bright=rand()>.46;
+      x.strokeStyle=`rgba(${bright?'242,218,171':'74,53,34'},${.025+rand()*.065})`;
+      x.lineWidth=.35+rand()*.8;x.beginPath();
+      for(let y=0;y<=1024;y+=32){const px=u+Math.sin(y*.017+grain)*wave*.27;if(y===0)x.moveTo(px,y);else x.lineTo(px,y);}
+      x.stroke();
+    }
+    x.fillStyle='rgba(51,39,29,.28)';x.fillRect(left,0,1.5,1024);
+    x.fillStyle='rgba(248,225,177,.12)';x.fillRect(left+2,0,1,1024);
+    const joint=board%2===0?512:256;
+    for(let y=joint;y<1024;y+=512){
+      x.fillStyle='rgba(60,44,30,.24)';x.fillRect(left+1,y,63,2);
+      x.fillStyle='rgba(239,211,158,.10)';x.fillRect(left+1,y+2,63,1);
+    }
+  }
+  const tex=new T.CanvasTexture(c);tex.wrapS=tex.wrapT=T.RepeatWrapping;
+  tex.repeat.set(16,4);tex.colorSpace=T.SRGBColorSpace;return tex;
 }
 function tareNameTexture(name){
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=512;
@@ -83,7 +102,7 @@ export class Dojo {
   resize(){const r=this.canvas.getBoundingClientRect();this.width=r.width;this.height=r.height;this.renderer.setSize(r.width,r.height,false);this.camera.aspect=r.width/r.height;this.camera.updateProjectionMatrix();}
   buildDojo(){
     const s=this.scene,wood=mat('#5c4530'),dark=mat('#2b3832'),wall=mat('#909b89'),paper=mat('#d6d7b5');
-    const floor=mat('#ffffff',.68);floor.map=woodTexture();floor.map.anisotropy=this.renderer.capabilities.getMaxAnisotropy();box(s,24,.15,20,floor,0,-.1,0);
+    const floor=mat('#ffffff',.57);floor.map=woodTexture();floor.map.anisotropy=this.renderer.capabilities.getMaxAnisotropy();box(s,24,.15,20,floor,0,-.1,0);
     box(s,24,7,.25,wall,0,3.4,-6);box(s,.25,7,20,wall,-10,3.4,0);
     box(s,24,1,.2,dark,0,.42,-5.8);
     for(let x=-10;x<=10;x+=3.3){box(s,.18,6.2,.28,wood,x,3,-5.55);box(s,.23,.2,18,wood,x,6,0);}
@@ -103,10 +122,14 @@ export class Dojo {
     const map=new T.CanvasTexture(c);map.colorSpace=T.SRGBColorSpace;const scrollMat=mat('#ffffff');scrollMat.map=map;
     box(s,1.25,3.6,.08,dark,0,3,-5.3);box(s,1.05,3.2,.1,scrollMat,0,3,-5.2);
     for(const y of [1.38,4.62]){const r=rod(s,.045,wood);between(r,V(-.65,y,-5.12),V(.65,y,-5.12));}
-    // Discreet court markings.
-    const tape=new T.MeshStandardMaterial({color:'#e9e3c9',roughness:1,transparent:true,opacity:.5});
-    for(const x of [-6.5,6.5])box(s,.04,.003,7,tape,x,.004,0);
-    for(const z of [-3.5,3.5])box(s,13,.003,.04,tape,0,.004,z);
+    // Keep the wooden dojo while borrowing the real tournament floor layout:
+    // a broad blue waiting/walking lane sits outside the white match boundary.
+    const lane=mat('#3867ad',.94);
+    for(const x of [-7.04,7.04])box(s,1.0,.014,9.08,lane,x,-.012,0);
+    for(const z of [-4.04,4.04])box(s,15.08,.014,1.0,lane,0,-.012,z);
+    const tape=new T.MeshStandardMaterial({color:'#f4f1e9',roughness:1,transparent:true,opacity:.9});
+    for(const x of [-6.5,6.5])box(s,.075,.004,7,tape,x,.004,0);
+    for(const z of [-3.5,3.5])box(s,13,.004,.075,tape,0,.004,z);
     box(s,.48,.004,.035,tape,0,.005,0);box(s,.035,.004,.48,tape,0,.005,0);
     for(const x of [-2.15,2.15])box(s,.035,.004,.4,tape,x,.005,0);
     // Equipment bench and stored shinai give the empty hall a lived-in scale.
@@ -116,13 +139,13 @@ export class Dojo {
   }
   buildReferees(){
     this.referees=[];
-    const shirt=mat('#ecece7'),shirtShade=mat('#d9ddd8'),trousers=mat('#263036'),red=mat('#aa4d3b'),white=mat('#eee9d5'),stick=mat('#93754d'),belt=mat('#202529'),collar=mat('#c8cdc7'),button=mat('#8f9693');
+    const shirt=mat('#ecece7'),shirtShade=mat('#d9ddd8'),trousers=mat('#4a4d50'),red=mat('#aa4d3b'),white=mat('#eee9d5'),stick=mat('#93754d'),belt=mat('#202529'),socks=mat('#15191b'),collar=mat('#c8cdc7'),button=mat('#8f9693');
     // 두 부심과 주심은 같은 복장을 입되 체격, 얼굴, 머리 모양이 서로
     // 다르다. 구형 머리+원통 몸통 대신 성인 비율의 목·어깨·허리·관절을 쓴다.
     const profiles=[
-      {x:-3.65,z:-1.9,angle:.65,build:.96,height:1.13,shoulder:.238,waist:.172,stance:.105,skin:'#c69f82',hair:'#202725',style:'crop'},
-      {x:3.65,z:-1.9,angle:-.65,build:1.03,height:1.10,shoulder:.252,waist:.188,stance:.12,skin:'#b8896e',hair:'#302923',style:'part'},
-      {x:0,z:3.15,angle:Math.PI,build:1.00,height:1.16,shoulder:.247,waist:.18,stance:.115,skin:'#c39a7d',hair:'#555b59',style:'swept'}
+      {x:-3.65,z:-1.9,angle:.65,build:.96,height:1.13,shoulder:.214,waist:.172,stance:.105,skin:'#c69f82',hair:'#202725',style:'crop'},
+      {x:3.65,z:-1.9,angle:-.65,build:1.03,height:1.10,shoulder:.224,waist:.188,stance:.12,skin:'#b8896e',hair:'#302923',style:'part'},
+      {x:0,z:3.15,angle:Math.PI,build:1.00,height:1.16,shoulder:.219,waist:.18,stance:.115,skin:'#c39a7d',hair:'#555b59',style:'swept'}
     ];
     for(const p of profiles){
       const skin=mat(p.skin),hair=mat(p.hair);
@@ -134,10 +157,14 @@ export class Dojo {
         const thigh=rod(root,.085,trousers);between(thigh,hip,knee);
         ellipsoid(root,.086,[.92,.78,.80],trousers,...knee.toArray());
         const shin=rod(root,.068,trousers);between(shin,knee,ankle);
+        // A narrow black sock remains visible between the trouser hem and shoe.
+        const sock=rod(root,.059,socks);between(sock,V(ankle.x,.16,.035),V(ankle.x,.07,.045));
         box(root,.15,.062,.31,belt,ankle.x,.045,.105);
       }
       box(root,p.stance*2+.19,.17,.25,trousers,0,.96,0);box(root,p.stance*2+.20,.052,.25,belt,0,1.025,0);
-      const torsoPoints=[[p.waist,0],[p.waist+.008,.12],[p.waist+.025,.31],[p.shoulder-.014,.49],[p.shoulder,.555],[p.shoulder-.052,.64]];
+      // Taper the shoulder plane into the neck instead of ending the shirt
+      // in a wide, flat ring behind the head.
+      const torsoPoints=[[p.waist,0],[p.waist+.008,.12],[p.waist+.025,.31],[p.shoulder-.014,.49],[p.shoulder-.015,.55],[p.shoulder-.035,.58],[.095,.615],[.072,.65]];
       const torso=mesh(new T.LatheGeometry(torsoPoints.map(q=>new T.Vector2(...q)),24),shirt,root,0,1.00,0);torso.scale.z=.76;
       // Collar, tie and neck make the white-shirt uniform readable at distance.
       const neck=rod(root,.066,skin);between(neck,V(0,1.62,0),V(0,1.735,0));
@@ -146,7 +173,6 @@ export class Dojo {
       // tailored fabric rather than a single toy-like cone.
       box(root,.012,.47,.009,shirtShade,0,1.31,.174);
       for(const y of [1.18,1.29,1.40,1.51])ellipsoid(root,.010,[.7,.7,.38],button,0,y,.181);
-      for(const sign of [-1,1]){const seam=box(root,.105,.012,.012,shirtShade,sign*(p.shoulder-.065),1.555,.08);seam.rotation.z=sign*.18;}
       // Smaller, vertically proportioned face with ears and a subtle nose.
       ellipsoid(root,.118,[.82,1.25,.88],skin,0,1.84,0);
       ellipsoid(root,.030,[.36,.56,.62],skin,0,1.83,.108);
@@ -172,10 +198,12 @@ export class Dojo {
       const flags={};
       const redSign=Math.abs(p.x)<.1?-1:1;
       for(const [name,sign,color] of [['red',redSign,red],['white',-redSign,white]]){
-        const arm=new T.Group();arm.position.set(sign*(p.shoulder-.012),1.50,0);root.add(arm);
-        ellipsoid(arm,.082,[1.05,.86,.88],shirt,0,0,0);
+        const arm=new T.Group();arm.position.set(sign*(p.shoulder-.012),1.54,0);root.add(arm);
         const elbow=V(sign*.065,-.285,.035),hand=V(sign*.018,-.535,.115);
-        const sleeve=rod(arm,.061,shirt);between(sleeve,V(0,-.025,0),elbow);
+        // A tapered sleeve joins the torso directly; a round shoulder cap
+        // looked like a padded toy joint even after narrowing the shoulders.
+        const sleeve=mesh(new T.CylinderGeometry(.048,.058,1,12),shirt,arm);
+        between(sleeve,V(0,-.025,0),elbow);
         ellipsoid(arm,.052,[.88,.90,.82],skin,...elbow.toArray());
         const forearm=rod(arm,.043,skin);between(forearm,elbow,hand);
         ellipsoid(arm,.047,[.88,1.08,.84],skin,...hand.toArray());
@@ -313,7 +341,7 @@ class Fighter {
     const wind=strikeWind(f.zone,player,level);
     // Every committed cut exits on a lane beside the opponent instead of
     // stopping in front of them or visually passing through their body.
-    const passProgress=f.state==='attack'?smooth((f.elapsed-(wind-.11))/(TIMING.recovery+.13)):0;
+    const passProgress=f.state==='attack'?attackPassProgress(f.elapsed,wind):0;
     // Each finish has its own lane: a big men clears furthest, kote stays
     // compact, and waist cuts arc around the opponent rather than through it.
     const passWidth=f.zone==='men'?.92:f.zone==='smallMen'?.74:f.zone==='kote'?.58:['do','gyakuDo'].includes(f.zone)?.76:f.zone==='hikiDo'?.52:.66;

@@ -1,4 +1,7 @@
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+// Keep the attack on the target line through contact.  Only the zanshin
+// follow-through may carry the fighter into the passing lane.
+export function attackPassProgress(elapsed,wind){return smooth((elapsed-wind)/.20);}
 // Cumulative forward displacement: never rewind a committed strike to its starting point.
 export function attackTravel(elapsed,wind,zone='do'){
   const drive=smooth((elapsed-(wind-.14))/.14),follow=smooth((elapsed-wind)/.20);

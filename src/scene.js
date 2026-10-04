@@ -36,14 +36,16 @@ function batchStatic(parent,exclude=new Set()){
   for(const [material,geometries] of batches){const geometry=mergeGeometries(geometries,false);if(geometry){const merged=mesh(geometry,material,parent);if(material.transparent)merged.castShadow=false;}for(const g of geometries)g.dispose();}
 }
 function clothGeometry(topR,bottomR,h,segments=36){
-  const positions=[],indices=[];
+  const positions=[],colors=[],indices=[];
   for(let row=0;row<=8;row++)for(let i=0;i<=segments;i++){
     const t=row/8,a=i/segments*Math.PI*2;
-    const r=mix(topR,bottomR,t)*(1+Math.cos(a*12)*.07*t);
+    const pleat=Math.cos(a*12),r=mix(topR,bottomR,t)*(1+pleat*.095*t);
+    const shade=1-(1-pleat)*.09*t;
     positions.push(Math.sin(a)*r,-t*h,Math.cos(a)*r*.74);
+    colors.push(shade,shade,shade);
   }
   for(let row=0;row<8;row++)for(let i=0;i<segments;i++){const a=row*(segments+1)+i,b=a+segments+1;indices.push(a,b,a+1,b,b+1,a+1);}
-  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('color',new T.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
 function woodTexture(){
   const c=document.createElement('canvas');c.width=512;c.height=1024;const x=c.getContext('2d');
@@ -135,7 +137,6 @@ export class Dojo {
     // Equipment bench and stored shinai give the empty hall a lived-in scale.
     box(s,3,.16,.7,wood,6,.48,-4.5);for(const x of [4.8,7.2])box(s,.12,.45,.5,dark,x,.2,-4.5);
     const bamboo=mat('#c3a06d');for(let i=0;i<5;i++){const stick=rod(s,.018,bamboo);between(stick,V(5.1+i*.2,.6,-4.5),V(5.3+i*.2,2,-4.9));}
-    const green=mat('#405849');for(let i=0;i<9;i++){const stem=rod(s,.025,green);between(stem,V(-8+i*.1,0,-4.5),V(-8+Math.sin(i)*.4,3+i*.09,-4.5));for(let j=0;j<3;j++){const leaf=ellipsoid(s,.3,[.12,1,.38],green,-8+Math.sin(i+j)*.4,1.7+j*.5,-4.5);leaf.rotation.z=(i%2?1:-1)*.6;}}
   }
   buildReferees(){
     this.referees=[];
@@ -200,10 +201,11 @@ export class Dojo {
       for(const [name,sign,color] of [['red',redSign,red],['white',-redSign,white]]){
         const arm=new T.Group();arm.position.set(sign*(p.shoulder-.012),1.54,0);root.add(arm);
         const elbow=V(sign*.065,-.285,.035),hand=V(sign*.018,-.535,.115);
-        // A tapered sleeve joins the torso directly; a round shoulder cap
-        // looked like a padded toy joint even after narrowing the shoulders.
-        const sleeve=mesh(new T.CylinderGeometry(.048,.058,1,12),shirt,arm);
-        between(sleeve,V(0,-.025,0),elbow);
+        // Start the sleeve inside the shirt's shoulder rather than at its
+        // outside edge. This closes the visible slit without adding a round
+        // shoulder pad or changing the flag arm's pivot.
+        const sleeve=mesh(new T.CylinderGeometry(.060,.055,1,12),shirt,arm);
+        between(sleeve,V(-sign*.055,.045,-.035),elbow);
         ellipsoid(arm,.052,[.88,.90,.82],skin,...elbow.toArray());
         const forearm=rod(arm,.043,skin);between(forearm,elbow,hand);
         ellipsoid(arm,.047,[.88,1.08,.84],skin,...hand.toArray());
@@ -273,11 +275,11 @@ class Fighter {
     // Material separation is what makes the existing animated geometry read
     // more like real equipment: woven cloth, matte leather, lacquer and steel
     // now respond differently to the same dojo light.
-    const blue=side==='blue';this.fabric=wovenMat(blue?'#172b49':'#ece9dd',blue?7:13);this.fold=wovenMat(blue?'#13243d':'#d0d4cf',blue?17:23);this.armor=lacquerMat('#111b23');this.trim=lacquerMat('#4a5b61');this.skin=toonMat('#c5a284',.7);this.tape=toonMat(blue?'#c94140':'#ebe6cd',.58);this.metal=new T.MeshPhysicalMaterial({color:'#c1c9c3',roughness:.2,metalness:.88,clearcoat:.32});
+    const blue=side==='blue';this.fabric=wovenMat(blue?'#172b49':'#ece9dd',blue?7:13);this.hakamaFabric=this.fabric.clone();this.hakamaFabric.vertexColors=true;this.fold=wovenMat(blue?'#13243d':'#d0d4cf',blue?17:23);this.armor=lacquerMat('#111b23');this.trim=lacquerMat('#4a5b61');this.skin=toonMat('#c5a284',.7);this.tape=toonMat(blue?'#c94140':'#ebe6cd',.58);this.metal=new T.MeshPhysicalMaterial({color:'#c1c9c3',roughness:.2,metalness:.88,clearcoat:.32});
     this.body=new T.Group();this.root.add(this.body);
     this.pelvis=new T.Group();this.body.add(this.pelvis);this.pelvis.position.y=1.04;
     this.trousers=[];
-    for(const x of [-.125,.125])this.trousers.push(mesh(clothGeometry(.135,.205,.96),this.fabric,this.pelvis,x,0,0));
+    for(const x of [-.125,.125])this.trousers.push(mesh(clothGeometry(.135,.205,.96),this.hakamaFabric,this.pelvis,x,0,0));
     const torsoGeo=new T.LatheGeometry([[.165,0],[.18,.1],[.23,.36],[.255,.49],[.19,.57],[.115,.6]].map(p=>new T.Vector2(...p)),24);
     this.torso=mesh(torsoGeo,this.fabric,this.body,0,1.02,0);this.torso.scale.z=.76;
     // Lacquered do, rounded rather than box-shaped.

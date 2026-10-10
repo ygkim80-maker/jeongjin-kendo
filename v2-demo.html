@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>정진 v2 · 타격 동작 시제품</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#0b1115;color:#ece9df;font-family:system-ui,"Malgun Gothic",sans-serif}
+    main{min-height:100dvh;display:grid;grid-template-rows:auto minmax(420px,1fr) auto;gap:12px;padding:16px}
+    header,footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    h1{font-size:clamp(19px,2.2vw,28px);margin:0}p{margin:4px 0;color:#aeb7b5;font-size:14px}
+    a{color:#d6cda9}.stage{position:relative;min-height:420px;border:1px solid #3d4b4d;border-radius:12px;overflow:hidden;background:#586b68}
+    canvas{width:100%;height:100%;display:block}.badge{position:absolute;left:14px;top:14px;padding:8px 12px;background:#0c151bdc;border:1px solid #667372;border-radius:4px;font-size:13px}
+    .status{position:absolute;left:14px;bottom:14px;max-width:calc(100% - 28px);padding:10px 14px;background:#0c151be8;border-left:3px solid #cbb782;font-size:15px}
+    .status.hit{border-color:#7ecaae}.status.miss{border-color:#db8b75}
+    .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}button{background:#d8cfac;border:0;padding:11px 18px;border-radius:5px;color:#172025;font-weight:700;cursor:pointer}
+    input[type=range]{width:min(420px,55vw);accent-color:#d8cfac}.small{font-size:13px;color:#aeb7b5}
+  </style>
+</head>
+<body><main>
+  <header><div><h1>정진 v2 · 큰머리 타격 동작 시제품</h1><p>중단 → 정확한 머리 접촉 → 상대 옆으로 통과 · 기존 게임과 분리된 동작 테스트</p></div><a href="/">기존 v1 화면으로 돌아가기</a></header>
+  <section class="stage"><canvas id="stage" aria-label="두 검도 선수가 대치하고 남색 선수가 큰머리를 치는 3D 시제품"></canvas><div class="badge">동작·접촉 검증용 · 선수 모델은 임시</div><div id="status" class="status" aria-live="polite">중단세로 대치합니다.</div></section>
+  <footer><div class="controls"><button id="toggle">일시정지</button><button id="replay">처음부터</button><input id="time" type="range" min="0" max="4" step="0.01" value="0" aria-label="장면 시간"><span id="time-label">0.0 / 4.0초</span></div><span class="small">실제 모델·리깅은 다음 검증 단계입니다. 이 화면은 배포 버전이 아닙니다.</span></footer>
+</main><script type="module" src="/src/v2-demo.js"></script></body></html>

@@ -261,6 +261,7 @@ export class Dojo {
     const target=this.target.clone();if(this.shake>0){target.x+=Math.sin(match.clock*150)*this.shake;target.y+=Math.cos(match.clock*123)*this.shake;this.shake=Math.max(0,this.shake-dt*.4);}
     this.camera.lookAt(target);if(active)this.dust.rotation.y+=dt*.008;
     for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;e.mesh.position.addScaledVector(e.v,dt);e.v.y-=dt*3;e.mesh.material.opacity=Math.max(0,e.life/.35);if(e.life<=0){this.scene.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();this.effects.splice(i,1);}}
+    this.beforeRender?.(); // Optional isolated prototype pose adjustment.
     this.renderer.render(this.scene,this.camera);
   }
 }

@@ -392,7 +392,11 @@ class Fighter {
     for(const [name,value] of Object.entries({twist,sink,frontLift,backLift,frontOffset,backOffset}))this.pose[name]=mix(this.pose[name],value,blend);
     this.body.position.y=breath+this.pose.sink;this.body.rotation.x=this.pose.lean;this.body.rotation.y=this.pose.twist;this.body.position.z=this.pose.lunge*.15;
     this.head.rotation.y=Math.sin(time*.8)*.012-this.pose.twist*.65;this.head.rotation.x=-this.pose.lean*.6;this.ribbon.rotation.x=Math.sin(time*4)*.12+this.pose.lean*2;
-    const walking=f.state!=='attack'&&Math.abs(f.velocity)>.08;const gait=Math.sin(time*16)*(walking?.16:0);
+    // Follow-through is locomotion too: do not freeze both feet while the
+    // attack state still carries the torso into the passing lane.
+    const following=f.state==='attack'&&f.elapsed>wind;
+    const walking=(f.state!=='attack'||following)&&Math.abs(f.velocity)>.08;
+    const gait=Math.sin(time*16)*(walking?.16:0);
     this.pelvis.rotation.z=walking?Math.sin(time*10)*.018:0;
     for(let i=0;i<2;i++){
       const leg=this.legs[i],x=i===0?-.14:.14,z=(i===0?-.2:.23)+(i===0?-gait:gait)+(i===1?this.pose.frontOffset:this.pose.backOffset);
@@ -405,6 +409,28 @@ class Fighter {
       const hip=V(x,0,0),ankle=V(x,-.94+lift,z),knee=V(x,-.49,z*.65+.06+lift*.7);
       between(leg.upper,hip,knee);between(leg.lower,knee,ankle);
     }
+    // Plant alternating feet against the floor during the lateral finish.
+    // Anchors are world-space, so leaning/twisting cannot drag a planted foot.
+    if(following){
+      this.root.updateMatrixWorld(true);
+      const phase=Math.floor((f.elapsed-wind)/.09);
+      if(!this.plantedFeet||this.plantPhase>phase){
+        this.plantedFeet=this.legs.map(leg=>leg.foot.getWorldPosition(V(0,0,0)));
+      }
+      this.plantPhase=phase;
+      for(let i=0;i<2;i++){
+        const leg=this.legs[i],swing=i===phase%2;
+        const target=leg.foot.getWorldPosition(V(0,0,0));
+        if(swing){
+          target.y=.05+Math.sin(((f.elapsed-wind)% .09)/.09*Math.PI)*.07;
+          this.plantedFeet[i].copy(target);
+        }else target.copy(this.plantedFeet[i]).setY(.05);
+        const ankle=this.pelvis.worldToLocal(target),hip=V(i===0?-.14:.14,0,0);
+        const knee=hip.clone().lerp(ankle,.5);knee.z+=.06;
+        leg.foot.position.copy(ankle);leg.foot.rotation.x=0;
+        between(leg.upper,hip,knee);between(leg.lower,knee,ankle);
+      }
+    }else{this.plantedFeet=null;this.plantPhase=-1;}
     const direction=this.pose.tip.clone().sub(this.pose.hand).normalize();
     this.shinai.position.copy(this.pose.hand);this.shinai.quaternion.setFromUnitVectors(V(0,1,0),direction);
     const hands=[this.pose.hand.clone(),this.pose.hand.clone().addScaledVector(direction,.19)];

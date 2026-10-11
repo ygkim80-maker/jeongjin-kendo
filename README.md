@@ -1,6 +1,6 @@
 # 정진 검도
 
-현재 개발 버전: **v2.0** (`package.json`: `2.0.0`).
+현재 개발 버전: **v2.0.1** (`package.json`: `2.0.1`). 변경 이력은 `CHANGELOG.md`에 누적합니다.
 
 v2 개선은 기존 게임의 `src/scene.js` 등 실제 실행 경로에 직접 반영합니다.
 배포는 전용 저장소 `ygkim80-maker/jeongjin-kendo`의 `main`과 기존 운영 주소를 사용합니다.

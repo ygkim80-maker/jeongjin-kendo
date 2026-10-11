@@ -2,7 +2,7 @@ import * as T from 'three';
 import {clamp,TIMING,strikeWind} from './engine.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {attackMotion} from './motion.js';
-import {attackPassProgress,attackTravel} from './footwork.js';
+import {attackPassProgress,attackTravel,isPassingCut,strikeFinish} from './footwork.js';
 const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z);
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 const mix=(a,b,t)=>a+(b-a)*t;
@@ -351,6 +351,19 @@ class Fighter {
     const passTarget=(player?-1:1)*passWidth*passProgress;
     this.passOffset=mix(this.passOffset??0,passTarget,1-Math.exp(-dt*(f.state==='attack'?22:7)));
     this.root.position.z=this.passOffset;
+    const finishActive=f.state==='attack'&&isPassingCut(f.zone)&&f.contactX!=null&&f.elapsed>=wind;
+    if(finishActive){
+      const finish=strikeFinish(f.elapsed,wind,f.contactGap);
+      this.finishOffset=f.contactX+(player?1:-1)*finish.forward-f.x;
+      this.finishLane=(player?-1:1)*finish.lateral;
+      this.passOffset=this.finishLane;
+    }else{
+      this.finishOffset=mix(this.finishOffset??0,0,1-Math.exp(-dt*5));
+      // Retrace only after the exchange, retaining side clearance until back in front.
+      this.finishLane=mix(this.finishLane??0,0,1-Math.exp(-dt*(Math.abs(this.finishOffset)>.35?0:5)));
+    }
+    this.root.position.x+=this.finishOffset??0;
+    if(finishActive||Math.abs(this.finishLane??0)>.01)this.root.position.z=this.finishLane;
     // 상단세는 손을 이마 위에 두고 죽도 끝을 등 뒤로 충분히 눕힌다.
     const restHand=stance==='jodan'?V(0,1.98,.04):V(0,1.19,.38),restTip=stance==='jodan'?V(0,2.68,-.95):V(0,1.64,1.42);
     let hand=restHand.clone(),tip=restTip.clone(),lean=0,lunge=0,twist=0,sink=0,frontLift=0,backLift=0,frontOffset=0,backOffset=0;
@@ -395,7 +408,9 @@ class Fighter {
     // Follow-through is locomotion too: do not freeze both feet while the
     // attack state still carries the torso into the passing lane.
     const following=f.state==='attack'&&f.elapsed>wind;
-    const walking=(f.state!=='attack'||following)&&Math.abs(f.velocity)>.08;
+    const visualSpeed=(this.root.position.x-(this.previousRootX??this.root.position.x))/Math.max(dt,.001);
+    this.previousRootX=this.root.position.x;
+    const walking=(f.state!=='attack'||following)&&(Math.abs(f.velocity)>.08||Math.abs(visualSpeed)>.08);
     const gait=Math.sin(time*16)*(walking?.16:0);
     this.pelvis.rotation.z=walking?Math.sin(time*10)*.018:0;
     for(let i=0;i<2;i++){

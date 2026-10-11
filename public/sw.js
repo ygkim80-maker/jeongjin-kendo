@@ -1,4 +1,4 @@
-const CACHE='jeongjin-kendo-build-20260919-12';
+const CACHE='jeongjin-kendo-build-20261011-v2.0.1';
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
 self.addEventListener('activate',event=>event.waitUntil(
   caches.keys()

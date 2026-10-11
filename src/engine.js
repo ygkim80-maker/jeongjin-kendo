@@ -1,4 +1,4 @@
-import {attackTravel} from './footwork.js';
+import {attackTravel,isPassingCut} from './footwork.js';
 export const NAMES = {men:'큰머리',smallMen:'머리',hikiMen:'퇴격머리',kote:'손목',do:'허리',tsuki:'찌름',hikiDo:'퇴격허리',gyakuDo:'역허리'};
 export const TIMING={playerWind:.19,recovery:.29,aiWind:level=>clamp(.82-level*.055,.24,.76)};
 // Big men needs a readable overhead chamber before the final fast cut.  Small
@@ -138,7 +138,7 @@ export class Match {
     if(hikiExit){this.tsubaFight=false;this.clinchTime=0;Object.assign(this.ai,{state:'idle',elapsed:0,clinch:false});}
     if(zone==='hikiDo'||zone==='gyakuDo')this.stance='chudan';
     if(!this.practice) this.prepareDefense(zone,counter);
-    Object.assign(this.player,{state:'attack',zone,elapsed:0,resolved:false,counter,startDistance:this.distance,startX:this.player.x,opponentX:this.ai.x});
+    Object.assign(this.player,{state:'attack',zone,elapsed:0,resolved:false,contactX:null,contactGap:null,counter,startDistance:this.distance,startX:this.player.x,opponentX:this.ai.x});
     this.counterWindow=0;this.stats.attacks++; this.event('swing',{zone,counter}); return true;
   }
   prepareDefense(zone,counter){
@@ -157,7 +157,7 @@ export class Match {
     let index=Math.min(pool.length-1,Math.floor(this.random()*pool.length)),zone=pool[index];
     if(zone===this.lastAiZone){index=(index+1)%pool.length;zone=pool[index];}
     this.lastAiZone=zone;
-    Object.assign(this.ai,{state:'attack',zone,elapsed:0,resolved:false,startDistance:Math.min(this.distance,2.4),startX:this.ai.x,opponentX:this.player.x});
+    Object.assign(this.ai,{state:'attack',zone,elapsed:0,resolved:false,contactX:null,contactGap:null,startDistance:Math.min(this.distance,2.4),startX:this.ai.x,opponentX:this.player.x});
     this.event('swing',{zone,player:false});
   }
   step(dt,input={}){
@@ -271,7 +271,8 @@ export class Match {
         if(f.elapsed<=dt*1.1&&this.distance<1.62)f.force+=.22;
         this.advanceStrike(f,isPlayer,dt);
         if(!f.resolved&&f.elapsed>=wind){f.resolved=true;this.resolve(f,other,isPlayer);if(this.pointWait>0)return;}
-        if(f.elapsed>wind+TIMING.recovery){f.state='idle';f.elapsed=0;if(!isPlayer)this.aiThink=(DIFFICULTY[this.level]?.attackDelay ?? 1)+this.random()*.8;}
+        const recovery=isPassingCut(f.zone)&&f.contactX!=null?.85:TIMING.recovery;
+        if(f.elapsed>wind+recovery){f.state='idle';f.elapsed=0;if(!isPlayer)this.aiThink=(DIFFICULTY[this.level]?.attackDelay ?? 1)+this.random()*.8;}
       }else if(f.state==='hit'&&f.elapsed>.48){f.state='idle';f.elapsed=0;}
     }
     p.x=clamp(p.x,-5.4,a.x-1.05);a.x=clamp(a.x,p.x+1.05,5.4);
@@ -284,6 +285,7 @@ export class Match {
     const closeEnough=this.distance>=near&&this.distance<=far;
     const reachable=(f.counter?this.distance>=1.045&&this.distance<=2.65:closeEnough)&&f.startDistance<=startingReach;
     if(!reachable){this.event('miss',{player:isPlayer,zone,reason:zone==='tsuki'&&this.distance<near?'찌름은 한 걸음 거리에서 목선을 노리세요.':'죽도가 닿기에는 거리가 맞지 않습니다.'});return;}
+    if(isPassingCut(zone)){f.contactX=f.x;f.contactGap=this.distance;}
     if(isPlayer&&this.aiEvade>0){this.aiEvade=0;this.event('evaded',{zone});return;}
     const guardStyle=other.guardStyle;
     const guarded=guardStyle===0?['men','smallMen','hikiMen'].includes(zone):guardStyle===1?zone==='kote':['do','hikiDo','gyakuDo'].includes(zone);

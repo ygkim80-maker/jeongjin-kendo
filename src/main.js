@@ -3,12 +3,16 @@ import {Match,NAMES,clamp,TIMING} from './engine.js';
 import {Dojo} from './scene.js';
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(sessionStorage.getItem('jeongjin-sw-reloaded')==='20260919-12')return;
-    sessionStorage.setItem('jeongjin-sw-reloaded','20260919-12');
+    if(sessionStorage.getItem('jeongjin-sw-reloaded')==='20261011-v2.0.1')return;
+    sessionStorage.setItem('jeongjin-sw-reloaded','20261011-v2.0.1');
     location.reload();
   });
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?build=20260919-12',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{}));
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?build=20261011-v2.0.1',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{}));
 }
+const versionBadge=document.createElement('small');
+versionBadge.textContent='v2.0.1';versionBadge.id='release-version';
+versionBadge.style.cssText='position:fixed;right:10px;bottom:5px;z-index:50;color:#bdc6c3;font-size:10px;pointer-events:none';
+document.body.append(versionBadge);
 const $=id=>document.getElementById(id);
 const match=new Match();
 const teamSlots=['선봉','2위','중견','부장','주장'];

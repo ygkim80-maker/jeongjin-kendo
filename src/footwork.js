@@ -2,6 +2,13 @@ const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 // Keep the attack on the target line through contact.  Only the zanshin
 // follow-through may carry the fighter into the passing lane.
 export function attackPassProgress(elapsed,wind){return smooth((elapsed-wind)/.20);}
+export const isPassingCut=zone=>['men','smallMen','kote','do','gyakuDo'].includes(zone);
+// Establish a clear lateral lane while still in front, then cross the target.
+export function strikeFinish(elapsed,wind,gap){
+  const side=smooth((elapsed-wind)/.26);
+  const forward=smooth((elapsed-wind-.14)/.60);
+  return {forward:.35*side+Math.max(0,gap+.55-.35)*forward,lateral:1.2*side};
+}
 // Cumulative forward displacement: never rewind a committed strike to its starting point.
 export function attackTravel(elapsed,wind,zone='do'){
   const drive=smooth((elapsed-(wind-.14))/.14),follow=smooth((elapsed-wind)/.20);
